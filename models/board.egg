@@ -1,0 +1,53 @@
+<CoordinateSystem> { Z-Up }
+
+<Comment> {
+  "flt2egg -ps keep gridBack.flt -o gridBack.egg"
+}
+<VertexPool> vpool {
+  <Vertex> 0 {
+    -1 0 -1
+  }
+  <Vertex> 1 {
+    -1 0 1
+  }
+  <Vertex> 2 {
+    1 0 1
+  }
+  <Vertex> 3 {
+    1 0 -1
+  }
+}
+<VertexPool> vpool {
+  <Vertex> 0 {
+    -0.5 0 0.5
+    <UV> { 0 1 }
+    <RGBA> { 1 1 1 1 }
+  }
+  <Vertex> 1 {
+    0.5 0 0.5
+    <UV> { 1 1 }
+    <RGBA> { 1 1 1 1 }
+  }
+  <Vertex> 2 {
+    0.5 0 -0.5
+    <UV> { 1 0 }
+    <RGBA> { 1 1 1 1 }
+  }
+  <Vertex> 3 {
+    -0.5 0 -0.5
+    <UV> { 0 0 }
+    <RGBA> { 1 1 1 1 }
+  }
+}
+<Group> GridBack {
+  <Group> gridBack {
+    <Polygon> {
+      <RGBA> { 1 1 1 0.498039215803146 }
+      <VertexRef> { 0 1 2 3 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <RGBA> { 1 1 1 0.498039215803146 }
+      <VertexRef> { 3 2 1 0 <Ref> { vpool } }
+    }
+  }
+}

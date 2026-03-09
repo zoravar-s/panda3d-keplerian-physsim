@@ -98,10 +98,12 @@ class Planetarium(ShowBase):
     
     def selectorUpdate(self,task):
         if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
-            self.selector.show()
-            self.selector.setPos(self.selectedObject.getPos())
+            pos = Point3()
+            pos = (self.compute2dPosition(self.selectedObject,pos))
+            if pos != False:
+                self.selector.setPos(pos)
         else:
-            self.selector.hide()
+            pass
         return task.cont
     
     def camUpdate(self,task):
@@ -187,25 +189,16 @@ class Planetarium(ShowBase):
             scale = 0.1,
         )
 
+        crosshair.setTransparency(TransparencyAttrib.MAlpha)
+
         # SELECTOR OBJECT
         
-        self.selector = loader.loadModel("models/board")
-        self.selector.setScale(5,5,5)
-        self.selector.setPos(0, 0, 0)
-        self.selector.setName("Selector")
-        self.selector.setBillboardPointEye(-40, fixed_depth=True)
-        self.selector.setBin("fixed", 0)
-        self.selector.setDepthWrite(False)
-        self.selector.setDepthTest(False)
-        # Texture Selector
-        
-        self.selector_tex = loader.loadTexture("textures/crosshair.png")
-        self.selector.setTexture(self.selector_tex, 0)
+        self.selector = OnscreenImage(
+            image = 'textures/crosshair.png',
+            pos = (0,0,0),
+            scale = 0.5,
+        )
         self.selector.setTransparency(TransparencyAttrib.MAlpha)
-        self.selector.reparentTo(self.root)
-        self.selector.hide()
-
-        crosshair.setTransparency(TransparencyAttrib.MAlpha)
 
         # CAM SETUP
         
@@ -283,17 +276,16 @@ class Planetarium(ShowBase):
         properties.setMouseMode(WindowProperties.M_absolute)
         self.win.requestProperties(properties)
 
-    def compute2dPosition(nodePath, point = Point3(0, 0, 0)):
-        # Computes a 3-d point into a 2-d point as seen by the camera
-        
-        p3d = base.cam.getRelativePoint(nodePath, point)
-
-        p2d = Point2()
-        if base.camLens.project(p3d, p2d):
-            return p2d
-
-        # If project() returns false, it means the point was behind the lens
-        return None
+    def compute2dPosition(self, node, point):
+        p3 = base.cam.getRelativePoint(node, point) # Gets coords in terms of camera
+        # Convert it through the lens to render2d coordinates
+        p2 = Point2() 
+        if not base.camLens.project(p3, p2): 
+            return False
+        r2d = Point3(p2[0], 0, p2[1]) 
+        # convert to aspect2d
+        a2d = aspect2d.getRelativePoint(render2d, r2d) 
+        return a2d	
 
 
 

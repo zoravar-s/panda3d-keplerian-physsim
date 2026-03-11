@@ -8,6 +8,8 @@ from math import *
 from panda3d.core import *
 import sys
 import os
+import time
+import csv
 
 confVars= """
 win-size 1280 720
@@ -98,12 +100,14 @@ class Planetarium(ShowBase):
     
     def selectorUpdate(self,task):
         if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
+            self.selector.show()
+            self.selector.setScale(0.2+(sin(((time.time()))))**2/10)
             pos = Point3()
             pos = (self.compute2dPosition(self.selectedObject,pos))
             if pos != False:
                 self.selector.setPos(pos)
         else:
-            pass
+            self.selector.hide()
         return task.cont
     
     def camUpdate(self,task):

@@ -3,16 +3,17 @@
 # The following code you are about to bear witness to is so unreadable, that when I wrote it, only God and I could understand what it meant.
 # Now, only God can.
 ###
-
+import math
 from math import *
 from panda3d.core import *
 import sys
 import os
 import time
 import csv
+import csvhandler
 
 confVars= """
-win-size 1280 720
+win-size 1920 1080
 window-title Planetarium
 show-frame-rate-meter True
 """
@@ -34,6 +35,15 @@ def createText(object, disp):
     textObject.reparentTo(object)
     return textObject
 
+def loadStar(self):
+    self.starbase = loader.loadModel("models/sphere")
+    self.starbase.setScale(1,1,1)
+    self.starbase.setPos(0, 0, 0)
+    self.starbase.reparentTo(render)
+
+def raToRad(value):
+    return value*((2*pi)/24)
+
 class Planetarium(ShowBase):
     
     def __init__(self): ### MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT ###
@@ -43,6 +53,7 @@ class Planetarium(ShowBase):
         lens = base.camLens
         # lens.setNearFar(0.1,9*10^7) # Clip planes (Shit doesn't work fix later if needed)
         base.setBackgroundColor(0,0,0) # Bg colour
+        self.font = loader.loadFont("fonts/charon.ttf")
         
         self.root = render.attachNewNode('root') # The entire game's root location
 
@@ -50,6 +61,10 @@ class Planetarium(ShowBase):
         self.captureMouse()
 
         self.running = 1 # Running is true (Note to future self, this variable is governed by everything instead of everything being governed by this variable FOR SOME REASON)
+        
+        self.xvel = 0
+        self.yvel = 0
+        self.zvel = 0
         
         self.createUI() # Create UI
 
@@ -60,6 +75,7 @@ class Planetarium(ShowBase):
         taskMgr.add(self.selectorUpdate, 'selectorUpdate')
 
         self.createSun()
+        self.starGenerate()
         
         self.root.setScale(1)
 
@@ -70,6 +86,8 @@ class Planetarium(ShowBase):
         self.sun.setScale(1,1,1)
         self.sun.setPos(0, 0, 0)
         self.sun.setName("Sun")
+        tex = loader.loadTexture("planets/sun.png")
+        self.sun.setTexture(tex, 0)
         # Board stuff
         
         self.board = loader.loadModel("models/board")
@@ -94,18 +112,24 @@ class Planetarium(ShowBase):
         self.sun.instanceTo(sunNode)
 
     def createUI(self):
-        self.runningtext = OnscreenText(text="Running", pos=(-1.4, 0.8), scale=0.07, fg=(1,1,1,1)) # Temp "pause" menu
-        self.selectiontext = OnscreenText(text="Test", pos=(-1.4, 0.7), scale=0.07, fg=(1,1,1,1)) # Selected obj
+        self.runningtext = OnscreenText(text="Running", pos=(1.9, 0.8), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
+        self.selectiontext = OnscreenText(text="", pos=(-1.9, 0.8), scale=0.07, fg=(1,1,1,1), font=self.font, align=0) # Selected obj
+        self.hiptext = OnscreenText(text="", pos=(-1.9, 0.75), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj hip number
+        self.rightasctext = OnscreenText(text="", pos=(-1.9, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj right ascention
+        self.decltext = OnscreenText(text="", pos=(-1.9, 0.65), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj declination
 
     
     def selectorUpdate(self,task):
         if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
-            self.selector.show()
-            self.selector.setScale(0.2+(sin(((time.time()))))**2/10)
             pos = Point3()
             pos = (self.compute2dPosition(self.selectedObject,pos))
             if pos != False:
+                self.selector.show()   
                 self.selector.setPos(pos)
+                if self.running == 1:
+                    self.selector.setScale(((self.selectedObject.getScale())*(1.2+((sin(((time.time()))))**2)/10))*(1/(self.selectedObject.getDistance(camera))))
+            else:
+                self.selector.hide()
         else:
             self.selector.hide()
         return task.cont
@@ -114,10 +138,11 @@ class Planetarium(ShowBase):
 
 
         playerMoveSpeed = 10
-
-        x_movement = 0
-        y_movement = 0
-        z_movement = 0
+        movesmoothness = 1.2 # Higher = less smooth
+        
+        x_movement = self.xvel
+        y_movement = self.yvel
+        z_movement = self.zvel
 
         # TEMP REMOVE REMOVE 
 
@@ -157,6 +182,11 @@ class Planetarium(ShowBase):
             self.root.getY() - y_movement,
             self.root.getZ() - z_movement,
         )
+        
+        self.xvel = x_movement/movesmoothness
+        self.yvel = y_movement/movesmoothness
+        self.zvel = z_movement/movesmoothness
+
 
         if self.cameraSwingActivated == True:
             md = self.win.getPointer(0)
@@ -190,7 +220,7 @@ class Planetarium(ShowBase):
         crosshair = OnscreenImage(
             image = 'textures/crosshair.png',
             pos = (0,0,0),
-            scale = 0.1,
+            scale = 0.05,
         )
 
         crosshair.setTransparency(TransparencyAttrib.MAlpha)
@@ -198,7 +228,7 @@ class Planetarium(ShowBase):
         # SELECTOR OBJECT
         
         self.selector = OnscreenImage(
-            image = 'textures/crosshair.png',
+            image = 'textures/select.png',
             pos = (0,0,0),
             scale = 0.5,
         )
@@ -249,8 +279,26 @@ class Planetarium(ShowBase):
             hitNodePath = rayHit.getIntoNodePath() # wtf are these methods?
             hitObject = hitNodePath.getPythonTag('owner')
             self.selectedObject = hitObject
+            
             if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
-                self.selectiontext.text = str(self.selectedObject.name)               
+                self.selectiontext.text = str(self.selectedObject.name)
+            else:
+                self.selectiontext.text = "" # IDK when an object would be nameless, but...
+                
+            if self.selectedObject.hasTag("hip"):
+                self.hiptext.text = ("HIP Number: "+str(self.selectedObject.getTag("hip")))
+            else:
+                self.hiptext.text = ""
+                
+            if self.selectedObject.hasTag("ra"):
+                self.rightasctext.text = ("RA: "+str(self.selectedObject.getTag("ra")))
+            else:
+                self.rightasctext.text = ""
+                
+            if self.selectedObject.hasTag("dec"):
+                self.decltext.text = ("DEC: "+str(self.selectedObject.getTag("dec")))
+            else:
+                self.decltext.text = ""
             
         pass
         
@@ -290,8 +338,56 @@ class Planetarium(ShowBase):
         # convert to aspect2d
         a2d = aspect2d.getRelativePoint(render2d, r2d) 
         return a2d	
-
-
+    
+    def starGenerate(self):
+        domeData = csvhandler.read_data("hygdata.csv", 6.5) # Uses custom library to get (in order:)
+        # Star Name, HIP Number, Right Ascention, Declination, Magnitude, Spectral class (letter)
+        for star in domeData:
+            name = (str(star[0]))
+            if name == "":
+               name = ("HIP "+str(star[1])) 
+            starNode = render.attachNewNode(str(name))
+            rightasc = raToRad(float(star[2]))
+            decl = degToRad(float(star[3]))
+            dist = 100
+            magnitude = 2*(1/1.5**(float(star[4])))
+            starNode.setPos(
+                dist*(math.cos(decl))*(math.cos(rightasc)),
+                dist*(math.cos(decl))*(math.sin(rightasc)),
+                dist*(math.sin(decl))
+            )
+            starobj = loader.loadModel("models/board")
+            starobj.setScale(magnitude)
+            starobj.setColor(1,1,1)
+            starobj.reparentTo(starNode)
+            starobj.lookAt(camera)
+            tex = loader.loadTexture("textures/star.png")
+            starobj.setTexture(tex, 0)
+            starobj.setTransparency(TransparencyAttrib.MAlpha)
+            starclass = (star[5]).lower()
+            if starclass == "o":
+                starobj.setColor(.4,.4,1)
+            elif starclass == "b":
+                starobj.setColor(.7,.7,1)
+            elif starclass == "a":
+                starobj.setColor(.9,.9,1)
+            elif starclass == "f":
+                starobj.setColor(1,1,1)
+            elif starclass == "g":
+                starobj.setColor(1,1,.9)
+            elif starclass == "k":
+                starobj.setColor(1,1,.7)
+            elif starclass == "m":
+                starobj.setColor(1,1,.4)
+            starSolid = CollisionBox((-1,-1,-1), (1,1,1))
+            starCol = CollisionNode('sun-collision')
+            starCol.addSolid(starSolid)
+            collider = starNode.attachNewNode(starCol)
+            collider.setPythonTag('owner', starNode)
+            if star[1]:
+                starNode.setTag("hip", str(star[1]))
+            starNode.setTag("ra", str(star[2]))
+            starNode.setTag("dec", str(star[3]))
 
 app = Planetarium()
 app.run()

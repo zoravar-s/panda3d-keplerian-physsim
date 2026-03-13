@@ -13,9 +13,9 @@ import csv
 import csvhandler
 
 confVars= """
-win-size 1920 1080
+win-size 1280 720
 window-title Planetarium
-show-frame-rate-meter True
+show-frame-rate-meter False
 """
 
 loadPrcFileData("",confVars)
@@ -49,6 +49,7 @@ class Planetarium(ShowBase):
     def __init__(self): ### MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT ###
                
         ShowBase.__init__(self)
+        self.running = 0 # Running is true (Note to future self, this variable is governed by everything instead of everything being governed by this variable FOR SOME REASON)
         self.disableMouse() # Awful name but disables default camera
         lens = base.camLens
         # lens.setNearFar(0.1,9*10^7) # Clip planes (Shit doesn't work fix later if needed)
@@ -57,14 +58,17 @@ class Planetarium(ShowBase):
         
         self.root = render.attachNewNode('root') # The entire game's root location
 
-        self.setupControls()
-        self.captureMouse()
-
-        self.running = 1 # Running is true (Note to future self, this variable is governed by everything instead of everything being governed by this variable FOR SOME REASON)
+        self.camera.setPos(10,0,0)
+        self.camera.setHpr(90,0,0)
         
+        self.setupControls()
+        self.releaseMouse()
+                
         self.xvel = 0
         self.yvel = 0
         self.zvel = 0
+
+        time.sleep(1)
         
         self.createUI() # Create UI
 
@@ -78,9 +82,9 @@ class Planetarium(ShowBase):
         self.starGenerate()
         
         self.root.setScale(1)
-
+        
         self.selectedObject = '' # SELECTED OBJECT VARIABLE
-
+        
     def createSun(self): # This creates the Sun, why is this special enough for it's own function? WHO KNOWS!
         self.sun = loader.loadModel("models/sphere")
         self.sun.setScale(1,1,1)
@@ -91,7 +95,7 @@ class Planetarium(ShowBase):
         # Board stuff
         
         self.board = loader.loadModel("models/board")
-        self.board.setScale(5,5,5)
+        self.board.setScale(8,8,8)
         self.board.setPos(0, 0, 0)
         self.board.setName("SunFlair")
         self.board.setBillboardPointWorld()
@@ -112,11 +116,11 @@ class Planetarium(ShowBase):
         self.sun.instanceTo(sunNode)
 
     def createUI(self):
-        self.runningtext = OnscreenText(text="Running", pos=(1.9, 0.8), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
-        self.selectiontext = OnscreenText(text="", pos=(-1.9, 0.8), scale=0.07, fg=(1,1,1,1), font=self.font, align=0) # Selected obj
-        self.hiptext = OnscreenText(text="", pos=(-1.9, 0.75), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj hip number
-        self.rightasctext = OnscreenText(text="", pos=(-1.9, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj right ascention
-        self.decltext = OnscreenText(text="", pos=(-1.9, 0.65), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj declination
+        self.runningtext = OnscreenText(text="Running", pos=(1.6, 0.8), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
+        self.selectiontext = OnscreenText(text="", pos=(-1.6, 0.8), scale=0.07, fg=(1,1,1,1), font=self.font, align=0) # Selected obj
+        self.hiptext = OnscreenText(text="", pos=(-1.6, 0.75), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj hip number
+        self.rightasctext = OnscreenText(text="", pos=(-1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj right ascention
+        self.decltext = OnscreenText(text="", pos=(-1.6, 0.65), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj declination
 
     
     def selectorUpdate(self,task):
@@ -190,10 +194,10 @@ class Planetarium(ShowBase):
 
         if self.cameraSwingActivated == True:
             md = self.win.getPointer(0)
-            
+
             mouseX = md.getX()
             mouseY = md.getY()
-
+            
             mouseChangeX = mouseX - self.lastMouseX
             mouseChangeY = mouseY - self.lastMouseY
 
@@ -201,7 +205,7 @@ class Planetarium(ShowBase):
 
             currentH = self.camera.getH()
             currentP = self.camera.getP()
-
+            
             self.camera.setHpr(
                 currentH - mouseChangeX * dt * self.cameraSwingFactor,
                 min(90, max(-90, currentP - mouseChangeY * dt * self.cameraSwingFactor)),
@@ -210,6 +214,7 @@ class Planetarium(ShowBase):
 
             self.lastMouseX = mouseX
             self.lastMouseY = mouseY # Mouse stuff
+
 
         return task.cont
     
@@ -268,6 +273,7 @@ class Planetarium(ShowBase):
         self.keyMap[key] = value
 
     def handleLeftClick(self):
+        self.running = 1
         self.captureMouse()
         self.selectObj()
         
@@ -279,39 +285,37 @@ class Planetarium(ShowBase):
             hitNodePath = rayHit.getIntoNodePath() # wtf are these methods?
             hitObject = hitNodePath.getPythonTag('owner')
             self.selectedObject = hitObject
-            
-            if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
-                self.selectiontext.text = str(self.selectedObject.name)
-            else:
-                self.selectiontext.text = "" # IDK when an object would be nameless, but...
-                
-            if self.selectedObject.hasTag("hip"):
-                self.hiptext.text = ("HIP Number: "+str(self.selectedObject.getTag("hip")))
-            else:
-                self.hiptext.text = ""
-                
-            if self.selectedObject.hasTag("ra"):
-                self.rightasctext.text = ("RA: "+str(self.selectedObject.getTag("ra")))
-            else:
-                self.rightasctext.text = ""
-                
-            if self.selectedObject.hasTag("dec"):
-                self.decltext.text = ("DEC: "+str(self.selectedObject.getTag("dec")))
-            else:
-                self.decltext.text = ""
+            if self.selectedObject is not None:
+                if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
+                    self.selectiontext.text = str(self.selectedObject.name)
+                else:
+                    self.selectiontext.text = "" # IDK when an object would be nameless, but...
+                    
+                if self.selectedObject.hasTag("hip"):
+                    self.hiptext.text = ("HIP Number: "+str(self.selectedObject.getTag("hip")))
+                else:
+                    self.hiptext.text = ""
+                    
+                if self.selectedObject.hasTag("ra"):
+                    self.rightasctext.text = ("RA: "+str(self.selectedObject.getTag("ra")))
+                else:
+                    self.rightasctext.text = ""
+                    
+                if self.selectedObject.hasTag("dec"):
+                    self.decltext.text = ("DEC: "+str(self.selectedObject.getTag("dec")))
+                else:
+                    self.decltext.text = ""
             
         pass
         
     def captureMouse(self):
 
         self.cameraSwingActivated = True
-
-        self.running = 1
-        
+            
         md = self.win.getPointer(0)
         self.lastMouseX = md.getX()
         self.lastMouseY = md.getY()
-        
+            
         properties = WindowProperties()
         properties.setCursorHidden(True)
         properties.setMouseMode(WindowProperties.M_relative)
@@ -378,7 +382,7 @@ class Planetarium(ShowBase):
             elif starclass == "k":
                 starobj.setColor(1,1,.7)
             elif starclass == "m":
-                starobj.setColor(1,1,.4)
+                starobj.setColor(1,1,.4) # This is stupid, I don't care
             starSolid = CollisionBox((-1,-1,-1), (1,1,1))
             starCol = CollisionNode('sun-collision')
             starCol.addSolid(starSolid)

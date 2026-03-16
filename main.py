@@ -299,14 +299,19 @@ class Planetarium(ShowBase):
             rings = loader.loadModel("models/board")
             rings.setPos(planet.getPos())
             rings.setName("Rings")
-            rings.reparentTo(planet)
             rings.setScale(1.7)
             ring_tex = loader.loadTexture("textures/saturn_rings.png")
             rings.setTexture(ring_tex, 0)
             rings.setTransparency(TransparencyAttrib.MAlpha)
+            rings.lookAt(self.sun)
+            rings.setColor(0.7,0.7,0.7)
+            rings.setH((rings.getH()+270)-planet.getH())
             rings.setP(90)
+            rings.setR(0)
             rings.setShaderOff()
-        
+            rings.setLightOff()
+            rings.reparentTo(planet)
+
         taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdatePlanet'+str(name)), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider], appendTask=True)        
         taskMgr.add(self.glareUpdate, ('glareUpdatePlanet'+str(name)), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board,planet], appendTask=True)
 
@@ -662,4 +667,3 @@ class Planetarium(ShowBase):
 
 app = Planetarium()
 app.run()
-

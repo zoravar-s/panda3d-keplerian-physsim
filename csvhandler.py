@@ -1,6 +1,6 @@
 import csv
 def read_data(filename, cutoff):
-    with open(filename, newline='') as file:
+    with open(filename, newline='', encoding="utf-8") as file:
         i=0
         data = []
         reader = csv.DictReader(file)

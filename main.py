@@ -11,12 +11,20 @@ import os
 import time
 import csv
 import csvhandler
+import planetcsvhandler
+
+import planethandler
 
 confVars= """
 win-size 1280 720
 window-title Planetarium
 show-frame-rate-meter False
 """
+
+from pathlib import Path # To avoid weird buggy executions
+parent_dir = Path(__file__).resolve().parent
+os.chdir(parent_dir)
+
 
 loadPrcFileData("",confVars)
 
@@ -52,14 +60,16 @@ class Planetarium(ShowBase):
         self.running = 0 # Running is true (Note to future self, this variable is governed by everything instead of everything being governed by this variable FOR SOME REASON)
         self.disableMouse() # Awful name but disables default camera
         lens = base.camLens
-        # lens.setNearFar(0.1,9*10^7) # Clip planes (Shit doesn't work fix later if needed)
+        lens.setNearFar(0.02,5e5) # Clip planes (Shit doesn't work fix later if needed)
         base.setBackgroundColor(0,0,0) # Bg colour
         self.font = loader.loadFont("fonts/charon.ttf")
         
         self.root = render.attachNewNode('root') # The entire game's root location
 
-        self.camera.setPos(10,0,0)
+        self.camera.setPos(0,0,0)
         self.camera.setHpr(90,0,0)
+
+        self.speed = 0.1
         
         self.setupControls()
         self.releaseMouse()
@@ -68,6 +78,10 @@ class Planetarium(ShowBase):
         self.yvel = 0
         self.zvel = 0
 
+        self.scale = 1000
+        
+        self.currenttime = planethandler.time_to_jd()
+        
         time.sleep(1)
         
         self.createUI() # Create UI
@@ -81,46 +95,279 @@ class Planetarium(ShowBase):
         self.createSun()
         self.starGenerate()
         
-        self.root.setScale(1)
+        self.createPlanetNode()
         
-        self.selectedObject = '' # SELECTED OBJECT VARIABLE
+        # self.root.setScale(1)
+
+        # name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch
+        self.selectedObject = '' # SELECTED OBJECT VARIABLE       
+        self.generatePlanets()
+        self.generateOrbits()
+        
+        self.root.setPos(-(self.root.find("planets").find("Earth").getPos(render))+LVecBase3f(0.2,0.2,0))
+        camera.lookAt(self.root.find("planets").find("Earth"))
+        self.toggleOrbits()        
         
     def createSun(self): # This creates the Sun, why is this special enough for it's own function? WHO KNOWS!
-        self.sun = loader.loadModel("models/sphere")
-        self.sun.setScale(1,1,1)
-        self.sun.setPos(0, 0, 0)
-        self.sun.setName("Sun")
+        sunNode = self.root.attachNewNode('Sun')
+        self.sun = NodePath(sunNode)
+        sun = loader.loadModel("models/sphere")
+        sun.setScale(1,1,1)
+        sun.setPos(0, 0, 0)
+        sun.setName("Sun")
         tex = loader.loadTexture("planets/sun.png")
-        self.sun.setTexture(tex, 0)
+        sun.setTexture(tex, 0)
         # Board stuff
         
-        self.board = loader.loadModel("models/board")
-        self.board.setScale(8,8,8)
-        self.board.setPos(0, 0, 0)
-        self.board.setName("SunFlair")
-        self.board.setBillboardPointWorld()
+        board = loader.loadModel("models/board")
+        board.setScale(8,8,8)
+        board.setPos(0, 0, 0)
+        board.setName("SunFlair")
+        board.setBillboardPointWorld()
 
         # Texture Board
         
-        self.sun_tex = loader.loadTexture("textures/star.png")
-        self.board.setTexture(self.sun_tex, 0)
-        self.board.setTransparency(TransparencyAttrib.MAlpha)
-        self.board.reparentTo(self.sun)
+        sun_tex = loader.loadTexture("textures/star.png")
+        board.setTexture(sun_tex, 0)
+        board.setTransparency(TransparencyAttrib.MAlpha)
+        board.reparentTo(sun)
         
-        sunNode = self.root.attachNewNode('Sun')
+        plight = PointLight('plight')
+        plight.setColor((1, 1, 1, 1))
+        plnp = sunNode.attachNewNode(plight)
+        plnp.setPos(0, 0, 0)
+        render.setLight(plnp)
+        
         sunSolid = CollisionBox((-1,-1,-1), (1,1,1))
         sunCol = CollisionNode('sun-collision')
         sunCol.addSolid(sunSolid)
         collider = sunNode.attachNewNode(sunCol)
         collider.setPythonTag('owner', sunNode)
-        self.sun.instanceTo(sunNode)
+        collider.setScale(0.1)
+        sun.reparentTo(sunNode)
+        sunNode.setScale(planethandler.kmToUnits(1.3927e6, self.scale))
+        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdateSun'), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider], appendTask=True)
+        taskMgr.add(self.sunGlare, ('glareUpdateSun'), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board], appendTask=True)        
+        sunNode.setLightOff()
+        
+    def createPlanetNode(self):
+        self.root.attachNewNode('planets')
+        self.root.attachNewNode('orbits')
 
+    # "name","body","parentobj","radius_km","a_AU","e","i_deg","Omega_deg","omega_deg","M0_deg","orbitalperiod_days","rotperiod_days","W0_deg","jd_epoch"
+    def generateOrbits(self):
+        planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library to get (in order:)
+        for planet in planetData:
+            self.drawOrbit(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
+                           float(planet[7]),float(planet[8]),float(planet[9]),float(planet[10]),float(planet[11]),float(planet[12]),float(planet[13]),int(planet[14]),float(planet[15]))
+                           
+    def generatePlanets(self):
+        planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library to get (in order:)
+        for planet in planetData:
+            self.createPlanet(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
+                           float(planet[7]),float(planet[8]),float(planet[9]),float(planet[10]),float(planet[11]),float(planet[12]),float(planet[13]),int(planet[14]),float(planet[15]))
+                   
+    def drawOrbit(self, name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel): # Some of the arguments aren't even used but we want consistency
+
+        resolution = 50
+        
+        planets = self.root.find("planets")
+        parentNode = planets.find(parentobj)
+        planetNode = planets.attachNewNode(str(name))
+        if parentobj == "Sun":
+            parentNode = self.sun            
+        
+        lines = LineSegs()
+        lines.setThickness(1)
+        lines.setColor( Vec4(0,0,0.5,1) )
+        
+        julian = jd_epoch
+        
+        # jd,
+        # jd_epoch,
+        # a,
+        # e,
+        # i,
+        # Omega,
+        # omega,
+        # M0,
+        # period
+        
+        location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
+        planet_pos = LVecBase3f(location[0],location[1],location[2])
+        planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale) # 1000 units = 1 AU
+        lines.moveTo(planetNode.getPos())
+        
+        for m in range(resolution):
+            lines.moveTo(planetNode.getPos())
+            julian = jd_epoch+(period/resolution)*m
+            location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
+            planet_pos = LVecBase3f(location[0],location[1],location[2])
+            planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale)
+            lines.drawTo(planetNode.getPos())
+            
+        julian = jd_epoch   
+        location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
+        planet_pos = LVecBase3f(location[0],location[1],location[2])
+        planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale)
+        lines.drawTo(planetNode.getPos())
+
+        planetNode.removeNode()
+        node = lines.create()
+        np = NodePath(node)
+        np.reparentTo(self.root.find("orbits"))
+        np.setLightOff()
+  
+    def createPlanet(self, name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel): # This creates a planet given the following:
+
+        # body type
+        # radius
+        # name
+        # semi major axis (au)
+        # eccentricity
+        # inclination
+        # longitude of ascending node
+        # argument of peripasis
+        # mean anomaly at epoch
+        # orbital period
+
+        size = planethandler.kmToUnits(radius*2, self.scale)
+        planets = self.root.find("planets")
+        planetNode = planets.attachNewNode(str(name))
+        
+        planet = loader.loadModel("models/sphere")
+        planet.setScale(1,1,1)
+
+        julian = self.currenttime
+        location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
+
+        # Rotational Characteristics
+
+        planet.setH((planethandler.rotationalCalc(julian,jd_epoch,rotperiod,W0))-90)
+        
+        # Orbital calculations
+
+        parentNode = planets.find(parentobj)
+        if parentobj == "Sun":
+            parentNode = self.sun
+        planet_pos = LVecBase3f(location[0],location[1],location[2])
+        planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale) # 1000 units = 1 AU
+        planet.setName(str(name))
+        tex = loader.loadTexture("planets/"+(name.lower())+".png")
+        planet.setTexture(tex, 0)
+        
+        Solid = CollisionBox((-1,-1,-1), (1,1,1))
+        planetCol = CollisionNode('planet-collision')
+        planetCol.addSolid(Solid)
+        collider = planetNode.attachNewNode(planetCol)
+        collider.setPythonTag('owner', planetNode)
+        collider.setPos(planet.getPos())
+        collider.setScale(1.5)
+
+        board = loader.loadModel("models/board")
+        board.setPos(planet.getPos())
+        board.setName("PlanetFlair")
+        board.setBillboardPointWorld()
+        
+        planet_tex = loader.loadTexture("textures/star.png")
+        board.setTexture(planet_tex, 0)
+        board.setTransparency(TransparencyAttrib.MAlpha)
+        board.reparentTo(planetNode)
+        board.setLightOff()
+        
+        planetNode.setScale(size)
+        
+        # Atmosphere start
+        if atm == 1:
+            atmshader = Shader.load(Shader.SL_GLSL, vertex="atmosphere.vert.glsl", fragment="atmosphere.frag.glsl")
+            planet.setShaderInput("planetTex", tex)
+            planet.setShaderInput("intensity", 1.2)
+            planet.setShaderInput("level", atmlevel)
+            planet.setShaderInput("atmosphereColor", LVecBase3f(0.5, 0.7, 1.0))
+
+        #
+            light_dir = planet.getRelativeVector(render, LVecBase3f((self.sun.getPos(render) - planetNode.getPos(render)).normalized())) # It took an embarassing amount of time for this code to be realised
+            planet.setShaderInput("lightDirWorld", light_dir)
+        #
+            planet.setShader(atmshader)
+
+        # Atmosphere end
+
+        # Saturn Rings
+
+        if name == "Saturn":
+            rings = loader.loadModel("models/board")
+            rings.setPos(planet.getPos())
+            rings.setName("Rings")
+            rings.reparentTo(planet)
+            rings.setScale(1.7)
+            ring_tex = loader.loadTexture("textures/saturn_rings.png")
+            rings.setTexture(ring_tex, 0)
+            rings.setTransparency(TransparencyAttrib.MAlpha)
+            rings.setP(90)
+            rings.setShaderOff()
+        
+        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdatePlanet'+str(name)), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider], appendTask=True)        
+        taskMgr.add(self.glareUpdate, ('glareUpdatePlanet'+str(name)), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board,planet], appendTask=True)
+
+        board.setScale((0.5/size)+(size)/150)
+        planet.reparentTo(planetNode)
+        
+    def starGenerate(self):
+        domeData = csvhandler.read_data("hygdata.csv", 6) # Uses custom library to get (in order:)
+        starholder = render.attachNewNode('stars')  
+        # Star Name, HIP Number, Right Ascention, Declination, Magnitude, Spectral class (letter)
+        for star in domeData:
+            name = (str(star[0]))
+            if name == "":
+               name = ("HIP "+str(star[1])) 
+            starNode = starholder.attachNewNode(str(name))
+            rightasc = raToRad(float(star[2]))
+            decl = degToRad(float(star[3]))
+            dist = 100
+            magnitude = 2*(1/1.5**(float(star[4])))
+            starNode.setPos(
+                dist*(math.cos(decl))*(math.cos(rightasc)),
+                dist*(math.cos(decl))*(math.sin(rightasc)),
+                dist*(math.sin(decl))
+            )
+            starobj = loader.loadModel("models/board")
+            starobj.setScale(magnitude)
+            starobj.setColor(1,1,1)
+            starobj.reparentTo(starNode)
+            starobj.lookAt(camera)
+            tex = loader.loadTexture("textures/star.png")
+            starobj.setTexture(tex, 0)
+            starobj.setTransparency(TransparencyAttrib.MAlpha)
+            starclass = (star[5]).lower()
+            classes = [["o",LVecBase4f(.4,.4,1,0)],
+                       ["b",LVecBase4f(.7,.7,1,1)],
+                       ["a",LVecBase4f(.9,.9,1,1)],
+                       ["f",LVecBase4f(1,1,1,1)],
+                       ["g",LVecBase4f(1,1,.9,1)],
+                       ["k",LVecBase4f(1,1,.7,1)],
+                       ["m",LVecBase4f(1,1,.4,1)],]
+            for i in classes:
+                if i[0] == starclass:
+                    starobj.setColor(i[1])
+            starSolid = CollisionBox((-1,-1,-1), (1,1,1))
+            starCol = CollisionNode('star-collision')
+            starCol.addSolid(starSolid)
+            collider = starNode.attachNewNode(starCol)
+            collider.setPythonTag('owner', starNode)
+            if star[1]:
+                starNode.setTag("hip", str(star[1]))
+            starNode.setTag("ra", str(star[2]))
+            starNode.setTag("dec", str(star[3]))
+            starNode.setLightOff()
+            
     def createUI(self):
         self.runningtext = OnscreenText(text="Running", pos=(1.6, 0.8), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
         self.selectiontext = OnscreenText(text="", pos=(-1.6, 0.8), scale=0.07, fg=(1,1,1,1), font=self.font, align=0) # Selected obj
         self.hiptext = OnscreenText(text="", pos=(-1.6, 0.75), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj hip number
         self.rightasctext = OnscreenText(text="", pos=(-1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj right ascention
         self.decltext = OnscreenText(text="", pos=(-1.6, 0.65), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj declination
+        self.speedtext = OnscreenText(text=(str(planethandler.unitsToKm(self.speed, self.scale))+" km/s"), pos=(1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
 
     
     def selectorUpdate(self,task):
@@ -131,30 +378,86 @@ class Planetarium(ShowBase):
                 self.selector.show()   
                 self.selector.setPos(pos)
                 if self.running == 1:
-                    self.selector.setScale(((self.selectedObject.getScale())*(1.2+((sin(((time.time()))))**2)/10))*(1/(self.selectedObject.getDistance(camera))))
+                    if self.selectedObject.getDistance(camera) < 50:
+                        self.selector.setScale(((self.selectedObject.getScale())*(1.2+((sin(((time.time()))))**2)/8))*(2/(self.selectedObject.getDistance(camera))))
+                    else:
+                        self.selector.setScale(0.03+((sin(((time.time()))))**2)/80)
             else:
                 self.selector.hide()
         else:
             self.selector.hide()
         return task.cont
+
+    def hitboxUpdate(self, x, y, z, nodeloc, task):
+        
+        # "WTF does this do?"
+        # Essentially, if a hitbox (or really any object) is supposed to be too far away from the camera,
+        # Like, far away where it's basically a background,
+        # Instead of having it stupid-far, it is actually only a few units away from the camera,
+        # and moves with the camera, to make it appear stationary.
+        
+        tempnode = self.root.attachNewNode('temp')
+        tempnode.setPos(LVecBase3f(x,y,z))
+        distance = camera.getDistance(tempnode)
+        x2 = tempnode.getX(render)
+        y2 = tempnode.getY(render)
+        z2 = tempnode.getZ(render)
+        if distance > 65:
+            tempnode.reparentTo(render)
+            nodeloc.setPos(render, ((65*((x2)/distance)),(65*((y2)/distance)),(65*((z2)/distance))))
+        else:
+            nodeloc.setPos(self.root, x,y,z)
+        tempnode.removeNode()
+        return task.again
+    
+    def glareUpdate(self, x, y, z, nodeloc, planetloc, task):
+
+        # SAME AS HITBOXUPDATE BUT FOR A GLARE WHICH APPEARS WHEN FAR AWAY ( LIKE REAL LIFE )!
+        
+        tempnode = self.root.attachNewNode('temp')
+        tempnode.setPos(LVecBase3f(x,y,z))
+        distance = camera.getDistance(tempnode)
+        x2 = tempnode.getX(render)
+        y2 = tempnode.getY(render)
+        z2 = tempnode.getZ(render)
+        if distance > 250:
+            nodeloc.show()
+            planetloc.hide()
+            tempnode.reparentTo(render)
+            nodeloc.setPos(render, ((250*((x2)/distance)),(250*((y2)/distance)),(250*((z2)/distance))))
+        else:
+            nodeloc.hide()
+            planetloc.show()
+        tempnode.removeNode()
+        return task.again
+    
+    def sunGlare(self, x, y, z, nodeloc, task):
+
+        # SAME AS HITBOXUPDATE BUT FOR A GLARE WHICH APPEARS WHEN FAR AWAY ( LIKE REAL LIFE )!
+        
+        tempnode = self.root.attachNewNode('temp')
+        tempnode.setPos(LVecBase3f(x,y,z))
+        distance = camera.getDistance(tempnode)
+        x2 = tempnode.getX(render)
+        y2 = tempnode.getY(render)
+        z2 = tempnode.getZ(render)
+        if distance > self.scale:
+            tempnode.reparentTo(render)
+            nodeloc.setPos(render, ((self.scale*((x2)/distance)),(self.scale*((y2)/distance)),(self.scale*((z2)/distance))))
+        else:
+            nodeloc.setPos(x,y,z)
+        tempnode.removeNode()
+        return task.again
     
     def camUpdate(self,task):
 
 
-        playerMoveSpeed = 10
+        playerMoveSpeed = self.speed
         movesmoothness = 1.2 # Higher = less smooth
         
         x_movement = self.xvel
         y_movement = self.yvel
         z_movement = self.zvel
-
-        # TEMP REMOVE REMOVE 
-
-        #self.disp.text = str(self.root.getDistance(camera))
-        #self.disp.scale = self.disp.getDistance(camera)*0.1
-        #self.root.setScale(1/(0.01+(self.root.getDistance(camera))))
-
-        # TEMP REMOVE REMOVE 
         
         dt = globalClock.getDt() # Gives update speed (tick period)
 
@@ -163,21 +466,21 @@ class Planetarium(ShowBase):
         else:
             self.runningtext.text = "Paused"
 
-
-        if self.keyMap['forward']:
-            x_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
-            y_movement += dt * playerMoveSpeed * cos(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
-            z_movement += dt * playerMoveSpeed * sin(degToRad(camera.getP()));
-        if self.keyMap['backward']:
-            x_movement += dt * playerMoveSpeed * sin(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
-            y_movement -= dt * playerMoveSpeed * cos(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
-            z_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getP()));
-        if self.keyMap['left']:
-            x_movement -= dt * playerMoveSpeed * cos(degToRad(camera.getH()))
-            y_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getH()))
-        if self.keyMap['right']:
-            x_movement += dt * playerMoveSpeed * cos(degToRad(camera.getH()))
-            y_movement += dt * playerMoveSpeed * sin(degToRad(camera.getH()))
+        if self.running == 1:
+            if self.keyMap['forward']:
+                x_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
+                y_movement += dt * playerMoveSpeed * cos(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
+                z_movement += dt * playerMoveSpeed * sin(degToRad(camera.getP()));
+            if self.keyMap['backward']:
+                x_movement += dt * playerMoveSpeed * sin(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
+                y_movement -= dt * playerMoveSpeed * cos(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
+                z_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getP()));
+            if self.keyMap['left']:
+                x_movement -= dt * playerMoveSpeed * cos(degToRad(camera.getH()))
+                y_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getH()))
+            if self.keyMap['right']:
+                x_movement += dt * playerMoveSpeed * cos(degToRad(camera.getH()))
+                y_movement += dt * playerMoveSpeed * sin(degToRad(camera.getH()))
 
         # What the fuck is this piece of shit?
 
@@ -268,6 +571,20 @@ class Planetarium(ShowBase):
         self.accept('s-up', self.updateKeyMap, ['backward', False])
         self.accept('d', self.updateKeyMap, ['right', True])
         self.accept('d-up', self.updateKeyMap, ['right', False])
+        self.accept('r', self.changespeed, extraArgs=[2])
+        self.accept('f', self.changespeed, extraArgs=[0.5])
+        self.accept('o', self.toggleOrbits)        
+
+    def toggleOrbits(self):
+        node = self.root.find("orbits")
+        if node.isHidden() == True:
+            node.show()
+        else:
+            node.hide()
+            
+    def changespeed(self, val):
+        self.speed = (self.speed)*val
+        self.speedtext.setText(str(planethandler.unitsToKm(self.speed, self.scale))+" km/s")
         
     def updateKeyMap(self, key, value):
         self.keyMap[key] = value
@@ -341,57 +658,8 @@ class Planetarium(ShowBase):
         r2d = Point3(p2[0], 0, p2[1]) 
         # convert to aspect2d
         a2d = aspect2d.getRelativePoint(render2d, r2d) 
-        return a2d	
-    
-    def starGenerate(self):
-        domeData = csvhandler.read_data("hygdata.csv", 6.5) # Uses custom library to get (in order:)
-        # Star Name, HIP Number, Right Ascention, Declination, Magnitude, Spectral class (letter)
-        for star in domeData:
-            name = (str(star[0]))
-            if name == "":
-               name = ("HIP "+str(star[1])) 
-            starNode = render.attachNewNode(str(name))
-            rightasc = raToRad(float(star[2]))
-            decl = degToRad(float(star[3]))
-            dist = 100
-            magnitude = 2*(1/1.5**(float(star[4])))
-            starNode.setPos(
-                dist*(math.cos(decl))*(math.cos(rightasc)),
-                dist*(math.cos(decl))*(math.sin(rightasc)),
-                dist*(math.sin(decl))
-            )
-            starobj = loader.loadModel("models/board")
-            starobj.setScale(magnitude)
-            starobj.setColor(1,1,1)
-            starobj.reparentTo(starNode)
-            starobj.lookAt(camera)
-            tex = loader.loadTexture("textures/star.png")
-            starobj.setTexture(tex, 0)
-            starobj.setTransparency(TransparencyAttrib.MAlpha)
-            starclass = (star[5]).lower()
-            if starclass == "o":
-                starobj.setColor(.4,.4,1)
-            elif starclass == "b":
-                starobj.setColor(.7,.7,1)
-            elif starclass == "a":
-                starobj.setColor(.9,.9,1)
-            elif starclass == "f":
-                starobj.setColor(1,1,1)
-            elif starclass == "g":
-                starobj.setColor(1,1,.9)
-            elif starclass == "k":
-                starobj.setColor(1,1,.7)
-            elif starclass == "m":
-                starobj.setColor(1,1,.4) # This is stupid, I don't care
-            starSolid = CollisionBox((-1,-1,-1), (1,1,1))
-            starCol = CollisionNode('sun-collision')
-            starCol.addSolid(starSolid)
-            collider = starNode.attachNewNode(starCol)
-            collider.setPythonTag('owner', starNode)
-            if star[1]:
-                starNode.setTag("hip", str(star[1]))
-            starNode.setTag("ra", str(star[2]))
-            starNode.setTag("dec", str(star[3]))
+        return a2d
 
 app = Planetarium()
 app.run()
+

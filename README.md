@@ -10,4 +10,6 @@ O - Toggle orbits <br>
 Esc/Left Click - Pause/Resume <br>
 Left Click - Select object <br>
 
+Currently the bodies use pre-packaged data for calculations. This is very inaccurate and will be changed later to accurate real-time data from NASA API
+
 <sub>Zoravar Singh. 2026</sub>

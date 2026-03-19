@@ -61,16 +61,22 @@ class Planetarium(ShowBase):
         self.disableMouse() # Awful name but disables default camera
         lens = base.camLens
         lens.setNearFar(0.02,5e5) # Clip planes (Shit doesn't work fix later if needed)
+        render.clear_clip_plane()
         base.setBackgroundColor(0,0,0) # Bg colour
         self.font = loader.loadFont("fonts/charon.ttf")
         
         self.root = render.attachNewNode('root') # The entire game's root location
+        self.localroot = render.attachNewNode('localroot') # This is the "root" of the focused object which is being linked to a place closer to the camera (floating point workaround)
 
         self.camera.setPos(0,0,0)
         self.camera.setHpr(90,0,0)
 
         self.speed = 0.1
         
+        self.scenetype = "solar"
+        self.focusplanet = False # These are for initialising the scenetype variables. For planetary and solar-scale seamless nodes adjustment
+        self.localpos = LVecBase3f(0,0,0)
+        self.globalpos = LVecBase3f(0,0,0)
         self.setupControls()
         self.releaseMouse()
                 
@@ -78,9 +84,9 @@ class Planetarium(ShowBase):
         self.yvel = 0
         self.zvel = 0
 
-        self.scale = 1000
+        self.scale = 1500
         
-        self.currenttime = planethandler.time_to_jd()
+        self.currenttime = 2454525.0
         
         time.sleep(1)
         
@@ -99,7 +105,7 @@ class Planetarium(ShowBase):
         
         # self.root.setScale(1)
 
-        # name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch
+        # name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel
         self.selectedObject = '' # SELECTED OBJECT VARIABLE       
         self.generatePlanets()
         self.generateOrbits()
@@ -146,7 +152,7 @@ class Planetarium(ShowBase):
         collider.setScale(0.1)
         sun.reparentTo(sunNode)
         sunNode.setScale(planethandler.kmToUnits(1.3927e6, self.scale))
-        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdateSun'), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider], appendTask=True)
+        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdateSun'), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,planethandler.kmToUnits(1.3927e6, self.scale)], appendTask=True)
         taskMgr.add(self.sunGlare, ('glareUpdateSun'), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board], appendTask=True)        
         sunNode.setLightOff()
         
@@ -230,28 +236,28 @@ class Planetarium(ShowBase):
         # argument of peripasis
         # mean anomaly at epoch
         # orbital period
-
+        
         size = planethandler.kmToUnits(radius*2, self.scale)
         planets = self.root.find("planets")
         planetNode = planets.attachNewNode(str(name))
         
         planet = loader.loadModel("models/sphere")
         planet.setScale(1,1,1)
-
+        parentNode = planets.find(parentobj)
+        if parentobj == "Sun":
+            parentNode = self.sun
+            
         julian = self.currenttime
         location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
 
         # Rotational Characteristics
 
-        planet.setH((planethandler.rotationalCalc(julian,jd_epoch,rotperiod,W0))-90)
+        planet.setH(((planethandler.rotationalCalc(julian,jd_epoch,rotperiod,W0))-90)+parentNode.getH())
         
         # Orbital calculations
 
-        parentNode = planets.find(parentobj)
-        if parentobj == "Sun":
-            parentNode = self.sun
         planet_pos = LVecBase3f(location[0],location[1],location[2])
-        planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale) # 1000 units = 1 AU
+        planetNode.setPos(self.root, parentNode.getPos()+planet_pos*self.scale) # 1000 units = 1 AU
         planet.setName(str(name))
         tex = loader.loadTexture("planets/"+(name.lower())+".png")
         planet.setTexture(tex, 0)
@@ -312,9 +318,13 @@ class Planetarium(ShowBase):
             rings.setLightOff()
             rings.reparentTo(planet)
 
-        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdatePlanet'+str(name)), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider], appendTask=True)        
-        taskMgr.add(self.glareUpdate, ('glareUpdatePlanet'+str(name)), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board,planet], appendTask=True)
 
+        # Data stored on planet
+        planetNode.setTag("body", body)
+        
+        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdatePlanet'+str(name)), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,size], appendTask=True)        
+        taskMgr.add(self.glareUpdate, ('glareUpdatePlanet'+str(name)), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board,planet,planetNode], appendTask=True)
+        taskMgr.add(self.planetUpdate, ('Planetupdate'+str(name)), extraArgs=[name, planet, planetNode, parentNode, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch], appendTask=True)
         board.setScale((0.5/size)+(size)/150)
         planet.reparentTo(planetNode)
         
@@ -372,8 +382,7 @@ class Planetarium(ShowBase):
         self.hiptext = OnscreenText(text="", pos=(-1.6, 0.75), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj hip number
         self.rightasctext = OnscreenText(text="", pos=(-1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj right ascention
         self.decltext = OnscreenText(text="", pos=(-1.6, 0.65), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj declination
-        self.speedtext = OnscreenText(text=(str(planethandler.unitsToKm(self.speed, self.scale))+" km/s"), pos=(1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
-
+        self.speedtext = OnscreenText(text=(str((1000*round((planethandler.unitsToKm(self.speed, self.scale))/1000,3)))+" km/s"), pos=(1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
     
     def selectorUpdate(self,task):
         if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
@@ -393,7 +402,7 @@ class Planetarium(ShowBase):
             self.selector.hide()
         return task.cont
 
-    def hitboxUpdate(self, x, y, z, nodeloc, task):
+    def hitboxUpdate(self, x, y, z, nodeloc, size, task):
         
         # "WTF does this do?"
         # Essentially, if a hitbox (or really any object) is supposed to be too far away from the camera,
@@ -409,13 +418,64 @@ class Planetarium(ShowBase):
         z2 = tempnode.getZ(render)
         if distance > 65:
             tempnode.reparentTo(render)
+            nodeloc.setScale(1/size)
             nodeloc.setPos(render, ((65*((x2)/distance)),(65*((y2)/distance)),(65*((z2)/distance))))
         else:
+            nodeloc.setScale(1)
             nodeloc.setPos(self.root, x,y,z)
         tempnode.removeNode()
         return task.again
-    
-    def glareUpdate(self, x, y, z, nodeloc, planetloc, task):
+
+    def planetUpdate(self, name, planet, planetNode, parentNode, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, task):
+        if not planet.getName == self.focusplanet:
+            planets = self.root.find("planets")
+            
+            julian = self.currenttime
+            location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
+
+            # Rotational Characteristics
+
+            planet.setH(((planethandler.rotationalCalc(julian,jd_epoch,rotperiod,W0))-90)+parentNode.getH())
+            
+            # Orbital calculations
+
+            planet_pos = LVecBase3f(location[0],location[1],location[2])
+            planetNode.setPos(self.root, parentNode.getPos()+planet_pos*self.scale) # 1000 units = 1 AU
+            collider = planetNode.find("planet-collision")
+            collider.setPos(planet.getPos())
+
+            board = planetNode.find("PlanetFlair")
+            board.setPos(planet.getPos())
+
+            # Saturn Rings
+
+            if name == "Saturn":
+                rings = planet.find("Rings")
+                rings.setPos(planet.getPos())
+                rings.lookAt(self.sun)
+                rings.setH((rings.getH()+180))
+                rings.setP(90)
+                rings.setR(0)
+        else:
+            planet_pos = self.localpos
+            planetNode.setPos(camera, planet_pos) # 1000 units = 1 AU
+            collider = planetNode.find("planet-collision")
+            collider.setPos(planet.getPos())
+
+            board = planetNode.find("PlanetFlair")
+            board.setPos(planet.getPos())
+
+            # Saturn Rings
+
+            if name == "Saturn":
+                rings = planet.find("Rings")
+                rings.setPos(planet.getPos())
+                rings.lookAt(self.sun)
+                rings.setH((rings.getH()+180))
+                rings.setP(90)
+                rings.setR(0)            
+            
+    def glareUpdate(self, x, y, z, nodeloc, planetloc, planetparentloc, task):
 
         # SAME AS HITBOXUPDATE BUT FOR A GLARE WHICH APPEARS WHEN FAR AWAY ( LIKE REAL LIFE )!
         
@@ -425,14 +485,37 @@ class Planetarium(ShowBase):
         x2 = tempnode.getX(render)
         y2 = tempnode.getY(render)
         z2 = tempnode.getZ(render)
+        objname = planetloc.getName()
+        if planetparentloc.hasTag("body"):
+            bodytype = planetparentloc.getTag("body")
         if distance > 250:
-            nodeloc.show()
-            planetloc.hide()
+            if self.focusplanet == objname:
+                planetloc.reparentTo(self.root.find("planets"))
+                planetloc.setPos(self.globalpos)
+                self.scenetype = "solar"
+                self.focusplanet = False
+                print(self.scenetype)
+                print(planetloc.getPos(camera))
+                self.localroot.setPos(0,0,0)
+                nodeloc.show()
+                planetloc.hide()
             tempnode.reparentTo(render)
             nodeloc.setPos(render, ((250*((x2)/distance)),(250*((y2)/distance)),(250*((z2)/distance))))
         else:
-            nodeloc.hide()
-            planetloc.show()
+            if self.scenetype == "solar" and bodytype == "planet": # We only want the body-as-center function to happen with planets, moons are overkill
+                self.localroot.setPos(0,0,0)
+                self.globalpos = planetloc.getPos(self.root)
+                self.localpos = planetloc.getPos(camera)
+                print(planetloc.getPos(camera))
+                print(self.localpos)
+                self.scenetype = "planetary"
+                self.focusplanet = objname
+                planetloc.reparentTo(self.localroot)
+                print(self.focusplanet)
+                print(self.scenetype)
+                print(planetloc.getPos(camera))
+                nodeloc.hide()
+                planetloc.show()
         tempnode.removeNode()
         return task.again
     
@@ -470,8 +553,9 @@ class Planetarium(ShowBase):
             self.runningtext.text = "Running"
         else:
             self.runningtext.text = "Paused"
-
-        if self.running == 1:
+        # if self.running == 1:
+        # if True
+        if True:
             if self.keyMap['forward']:
                 x_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
                 y_movement += dt * playerMoveSpeed * cos(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
@@ -495,6 +579,11 @@ class Planetarium(ShowBase):
             self.root.getZ() - z_movement,
         )
         
+        self.localroot.setPos(
+            self.root.getX() - x_movement,
+            self.root.getY() - y_movement,
+            self.root.getZ() - z_movement,
+        )        
         self.xvel = x_movement/movesmoothness
         self.yvel = y_movement/movesmoothness
         self.zvel = z_movement/movesmoothness
@@ -588,8 +677,9 @@ class Planetarium(ShowBase):
             node.hide()
             
     def changespeed(self, val):
-        self.speed = (self.speed)*val
-        self.speedtext.setText(str(planethandler.unitsToKm(self.speed, self.scale))+" km/s")
+        if planethandler.unitsToKm(self.speed*val, self.scale) > 500:
+            self.speed = (self.speed)*val
+            self.speedtext.setText(str((1000*round((planethandler.unitsToKm(self.speed, self.scale))/1000,3)))+" km/s")
         
     def updateKeyMap(self, key, value):
         self.keyMap[key] = value

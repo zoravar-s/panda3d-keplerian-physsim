@@ -458,12 +458,11 @@ class Planetarium(ShowBase):
                 rings.setR(0)
         else:
             planet_pos = self.localpos
-            planetNode.setPos(camera, planet_pos) # 1000 units = 1 AU
+            planetNode.setPos(self.localroot, planet_pos)
+            planet.setPos(self.localroot, planet_pos)
+            print(planet.getPos(self.localroot))
             collider = planetNode.find("planet-collision")
             collider.setPos(planet.getPos())
-
-            board = planetNode.find("PlanetFlair")
-            board.setPos(planet.getPos())
 
             # Saturn Rings
 
@@ -473,7 +472,8 @@ class Planetarium(ShowBase):
                 rings.lookAt(self.sun)
                 rings.setH((rings.getH()+180))
                 rings.setP(90)
-                rings.setR(0)            
+                rings.setR(0)
+        return task.cont
             
     def glareUpdate(self, x, y, z, nodeloc, planetloc, planetparentloc, task):
 
@@ -490,32 +490,28 @@ class Planetarium(ShowBase):
             bodytype = planetparentloc.getTag("body")
         if distance > 250:
             if self.focusplanet == objname:
-                planetloc.reparentTo(self.root.find("planets"))
+                planetparentloc.reparentTo(self.root.find("planets"))
                 planetloc.setPos(self.globalpos)
                 self.scenetype = "solar"
                 self.focusplanet = False
                 print(self.scenetype)
                 print(planetloc.getPos(camera))
                 self.localroot.setPos(0,0,0)
-                nodeloc.show()
-                planetloc.hide()
+            nodeloc.show()
+            planetloc.hide()
             tempnode.reparentTo(render)
             nodeloc.setPos(render, ((250*((x2)/distance)),(250*((y2)/distance)),(250*((z2)/distance))))
         else:
             if self.scenetype == "solar" and bodytype == "planet": # We only want the body-as-center function to happen with planets, moons are overkill
-                self.localroot.setPos(0,0,0)
+                self.localroot.setPos(camera, 0,0,0)
                 self.globalpos = planetloc.getPos(self.root)
-                self.localpos = planetloc.getPos(camera)
+                self.localpos = planetloc.getPos(self.localroot)
                 print(planetloc.getPos(camera))
                 print(self.localpos)
                 self.scenetype = "planetary"
                 self.focusplanet = objname
-                planetloc.reparentTo(self.localroot)
-                print(self.focusplanet)
-                print(self.scenetype)
-                print(planetloc.getPos(camera))
-                nodeloc.hide()
-                planetloc.show()
+            nodeloc.hide()
+            planetloc.show()
         tempnode.removeNode()
         return task.again
     

@@ -63,7 +63,7 @@ class Planetarium(ShowBase):
         lens.setNearFar(0.02,5e5) # Clip planes (Shit doesn't work fix later if needed)
         render.clear_clip_plane()
         base.setBackgroundColor(0,0,0) # Bg colour
-        self.font = loader.loadFont("fonts/charon.ttf")
+        self.font = loader.loadFont("fonts/arial.ttf")
         
         self.root = render.attachNewNode('root') # The entire game's root location
         self.localroot = render.attachNewNode('localroot') # This is the "root" of the focused object which is being linked to a place closer to the camera (floating point workaround)
@@ -242,11 +242,12 @@ class Planetarium(ShowBase):
         planetNode = planets.attachNewNode(str(name))
         
         planet = loader.loadModel("models/sphere")
-        planet.setScale(1,1,1)
+        planet.setScale(self.root, 1)
         parentNode = planets.find(parentobj)
         if parentobj == "Sun":
             parentNode = self.sun
-            
+        else:
+            planetNode.reparentTo(parentNode)
         julian = self.currenttime
         location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
 
@@ -268,7 +269,9 @@ class Planetarium(ShowBase):
         collider = planetNode.attachNewNode(planetCol)
         collider.setPythonTag('owner', planetNode)
         collider.setPos(planet.getPos())
-        collider.setScale(1.5)
+        
+        planetNode.setScale(self.root, size)
+        collider.setScale(self.root, planet.getScale(self.root)*1.5)
 
         board = loader.loadModel("models/board")
         board.setPos(planet.getPos())
@@ -281,7 +284,6 @@ class Planetarium(ShowBase):
         board.reparentTo(planetNode)
         board.setLightOff()
         
-        planetNode.setScale(size)
         
         # Atmosphere start
         if atm == 1:
@@ -305,7 +307,7 @@ class Planetarium(ShowBase):
             rings = loader.loadModel("models/board")
             rings.setPos(planet.getPos())
             rings.setName("Rings")
-            rings.setScale(1.7)
+            rings.setScale(self.root, 1.7)
             ring_tex = loader.loadTexture("textures/saturn_rings.png")
             rings.setTexture(ring_tex, 0)
             rings.setTransparency(TransparencyAttrib.MAlpha)
@@ -322,9 +324,10 @@ class Planetarium(ShowBase):
         # Data stored on planet
         planetNode.setTag("body", body)
         
+        
         taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdatePlanet'+str(name)), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,size], appendTask=True)        
         taskMgr.add(self.glareUpdate, ('glareUpdatePlanet'+str(name)), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board,planet,planetNode], appendTask=True)
-        taskMgr.add(self.planetUpdate, ('Planetupdate'+str(name)), extraArgs=[name, planet, planetNode, parentNode, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch], appendTask=True)
+        #taskMgr.add(self.planetUpdate, ('Planetupdate'+str(name)), extraArgs=[name, planet, planetNode, parentNode, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch], appendTask=True)
         board.setScale((0.5/size)+(size)/150)
         planet.reparentTo(planetNode)
         
@@ -393,7 +396,7 @@ class Planetarium(ShowBase):
                 self.selector.setPos(pos)
                 if self.running == 1:
                     if self.selectedObject.getDistance(camera) < 50:
-                        self.selector.setScale(((self.selectedObject.getScale())*(1.2+((sin(((time.time()))))**2)/8))*(2/(self.selectedObject.getDistance(camera))))
+                        self.selector.setScale(((self.selectedObject.getScale(self.root))*(1.2+((sin(((time.time()))))**2)/8))*(2/(self.selectedObject.getDistance(camera))))
                     else:
                         self.selector.setScale(0.03+((sin(((time.time()))))**2)/80)
             else:
@@ -455,25 +458,7 @@ class Planetarium(ShowBase):
                 rings.lookAt(self.sun)
                 rings.setH((rings.getH()+180))
                 rings.setP(90)
-                rings.setR(0)
-        else:
-            planet_pos = self.localpos
-            planetNode.setPos(self.localroot, planet_pos)
-            planet.setPos(self.localroot, planet_pos)
-            print(planet.getPos(self.localroot))
-            collider = planetNode.find("planet-collision")
-            collider.setPos(planet.getPos())
-
-            # Saturn Rings
-
-            if name == "Saturn":
-                rings = planet.find("Rings")
-                rings.setPos(planet.getPos())
-                rings.lookAt(self.sun)
-                rings.setH((rings.getH()+180))
-                rings.setP(90)
-                rings.setR(0)
-        return task.cont
+                rings.setR(0)         
             
     def glareUpdate(self, x, y, z, nodeloc, planetloc, planetparentloc, task):
 
@@ -490,26 +475,28 @@ class Planetarium(ShowBase):
             bodytype = planetparentloc.getTag("body")
         if distance > 250:
             if self.focusplanet == objname:
-                planetparentloc.reparentTo(self.root.find("planets"))
-                planetloc.setPos(self.globalpos)
+                self.localroot.setPos(0,0,0)
+                planetparentloc.setScale(planetparentloc.getScale(self.root))
                 self.scenetype = "solar"
                 self.focusplanet = False
-                print(self.scenetype)
-                print(planetloc.getPos(camera))
-                self.localroot.setPos(0,0,0)
+                planetparentloc.reparentTo(self.root.find("planets"))
+                planetparentloc.setPos(self.root, self.globalpos)
             nodeloc.show()
             planetloc.hide()
             tempnode.reparentTo(render)
             nodeloc.setPos(render, ((250*((x2)/distance)),(250*((y2)/distance)),(250*((z2)/distance))))
         else:
-            if self.scenetype == "solar" and bodytype == "planet": # We only want the body-as-center function to happen with planets, moons are overkill
-                self.localroot.setPos(camera, 0,0,0)
-                self.globalpos = planetloc.getPos(self.root)
-                self.localpos = planetloc.getPos(self.localroot)
-                print(planetloc.getPos(camera))
-                print(self.localpos)
+            if self.scenetype == "solar" and (bodytype == "planet" or bodytype == "dwarf_planet") : # We only want the body-as-center function to happen with planets, moons are overkill
+                print(objname)
+                self.localroot.setPos(0,0,0)
+                planetparentloc.setScale(planetparentloc.getScale(self.localroot))
                 self.scenetype = "planetary"
                 self.focusplanet = objname
+                self.localpos = planetparentloc.getPos(self.localroot)
+                self.globalpos = planetparentloc.getPos(self.root)
+                planetparentloc.reparentTo(self.localroot)
+                planetparentloc.setPos(self.localroot, self.localpos)
+                self.localpos = planetloc.getPos(self.localroot)
             nodeloc.hide()
             planetloc.show()
         tempnode.removeNode()
@@ -574,12 +561,14 @@ class Planetarium(ShowBase):
             self.root.getY() - y_movement,
             self.root.getZ() - z_movement,
         )
-        
+
+            
         self.localroot.setPos(
-            self.root.getX() - x_movement,
-            self.root.getY() - y_movement,
-            self.root.getZ() - z_movement,
-        )        
+            self.localroot.getX() - x_movement,
+            self.localroot.getY() - y_movement,
+            self.localroot.getZ() - z_movement,
+        )
+        
         self.xvel = x_movement/movesmoothness
         self.yvel = y_movement/movesmoothness
         self.zvel = z_movement/movesmoothness

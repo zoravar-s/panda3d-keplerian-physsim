@@ -1,0 +1,163 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0" version="29.6.4">
+  <diagram name="Page-1" id="ib5QHis4_bbkiFnd4rFi">
+    <mxGraphModel dx="1559" dy="737" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-23" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-24" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" value="Game-Space" vertex="1">
+          <mxGeometry height="40" width="120" x="300" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-22" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Planetary Game-Space" vertex="1">
+          <mxGeometry height="40" width="120" x="120" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-19" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-20" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Interstellar Game-Space" vertex="1">
+          <mxGeometry height="40" width="120" x="300" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Game Loop" vertex="1">
+          <mxGeometry height="40" width="80" x="40" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-9" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- Update Camera Location&lt;br&gt;- Calculate Planet Locations using&amp;nbsp;&lt;br&gt;astronomical data&lt;br&gt;-Update Planet Locations&lt;br&gt;- Send close planets to local space (and their moons)&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="150" width="130" x="40" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Initialize" vertex="1">
+          <mxGeometry height="40" width="80" x="230" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-13" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- Generate planets with shaders/textures&lt;br&gt;&lt;div&gt;- Generate Solar System object tree&lt;/div&gt;&lt;div&gt;- Fetch database information and load into object data&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="130" x="205" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Game Loop" vertex="1">
+          <mxGeometry height="40" width="80" x="390" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-15" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- Update Camera Location&lt;br&gt;- Update rendered&lt;br&gt;chunks given camera&lt;br&gt;location&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="130" x="390" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Initialize" vertex="1">
+          <mxGeometry height="40" width="80" x="580" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-50" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-17" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- Calculate chunks using Database&lt;div&gt;- Fetch database information and load into object data&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="130" x="555" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-52" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-53" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-34">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="130" />
+              <mxPoint x="887" y="130" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-55" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="130" />
+              <mxPoint x="360" y="130" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" value="Program" vertex="1">
+          <mxGeometry height="40" width="170" x="495" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-29" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-30" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" value="Database" vertex="1">
+          <mxGeometry height="40" width="120" x="1210" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-51" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Planet Data" vertex="1">
+          <mxGeometry height="40" width="120" x="1280" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-31" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="O9Trp1BNhHn_VR8_TUYc-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-28" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="HYG Star Data" vertex="1">
+          <mxGeometry height="40" width="120" x="1140" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-32" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="O9Trp1BNhHn_VR8_TUYc-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-38" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="O9Trp1BNhHn_VR8_TUYc-35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-39" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-33" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" value="Local-Space" vertex="1">
+          <mxGeometry height="40" width="120" x="520" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-47" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-48" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-46">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-49" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-45">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-34" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" value="UI" vertex="1">
+          <mxGeometry height="40" width="120" x="827" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-35" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Projection Sphere" vertex="1">
+          <mxGeometry height="40" width="120" x="490" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-36" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- Distant objects (e.g Background stars, planets)" vertex="1">
+          <mxGeometry height="50" width="130" x="490" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-37" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Local objects in local coordinates" vertex="1">
+          <mxGeometry height="50" width="120" x="660" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-43" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.462;exitY=0.993;exitDx=0;exitDy=0;exitPerimeter=0;" target="O9Trp1BNhHn_VR8_TUYc-37">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="720" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-44" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Display data for selected object" vertex="1">
+          <mxGeometry height="40" width="120" x="827" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-45" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Simulation controls" vertex="1">
+          <mxGeometry height="40" width="120" x="985" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-46" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Camera Settings" vertex="1">
+          <mxGeometry height="40" width="120" x="1000" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-56" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- FOV, speed etc.." vertex="1">
+          <mxGeometry height="28" width="130" x="1000" y="316" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-57" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- Time, display (orbits etc)" vertex="1">
+          <mxGeometry height="28" width="210" x="980" y="492" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-58" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="- Name, distance, moons, etc..." vertex="1">
+          <mxGeometry height="40" width="130" x="780" y="486" as="geometry" />
+        </mxCell>
+        <mxCell id="O9Trp1BNhHn_VR8_TUYc-59" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="&lt;div&gt;- This may be fetched&lt;/div&gt;&lt;div&gt;from an external library&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="130" x="1210" y="432" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

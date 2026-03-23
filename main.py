@@ -152,7 +152,7 @@ class Planetarium(ShowBase):
         collider.setScale(0.1)
         sun.reparentTo(sunNode)
         sunNode.setScale(planethandler.kmToUnits(1.3927e6, self.scale))
-        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdateSun'), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,planethandler.kmToUnits(1.3927e6, self.scale)], appendTask=True)
+        taskMgr.doMethodLater(0.1, self.sunHitboxUpdate, ('hitboxUpdateSun'), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,planethandler.kmToUnits(1.3927e6, self.scale)], appendTask=True)
         taskMgr.add(self.sunGlare, ('glareUpdateSun'), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board], appendTask=True)        
         sunNode.setLightOff()
         
@@ -325,8 +325,8 @@ class Planetarium(ShowBase):
         planetNode.setTag("body", body)
         
         
-        taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdatePlanet'+str(name)), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,size], appendTask=True)        
-        taskMgr.add(self.glareUpdate, ('glareUpdatePlanet'+str(name)), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board,planet,planetNode], appendTask=True)
+        #taskMgr.doMethodLater(0.1, self.hitboxUpdate, ('hitboxUpdatePlanet'+str(name)), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,size], appendTask=True)        
+        taskMgr.add(self.glareUpdate, ('glareUpdatePlanet'+str(name)), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board,planet,planetNode,collider], appendTask=True)
         #taskMgr.add(self.planetUpdate, ('Planetupdate'+str(name)), extraArgs=[name, planet, planetNode, parentNode, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch], appendTask=True)
         board.setScale((0.5/size)+(size)/150)
         planet.reparentTo(planetNode)
@@ -405,7 +405,7 @@ class Planetarium(ShowBase):
             self.selector.hide()
         return task.cont
 
-    def hitboxUpdate(self, x, y, z, nodeloc, size, task):
+    def sunHitboxUpdate(self, x, y, z, nodeloc, size, task):
         
         # "WTF does this do?"
         # Essentially, if a hitbox (or really any object) is supposed to be too far away from the camera,
@@ -460,7 +460,7 @@ class Planetarium(ShowBase):
                 rings.setP(90)
                 rings.setR(0)         
             
-    def glareUpdate(self, x, y, z, nodeloc, planetloc, planetparentloc, task):
+    def glareUpdate(self, x, y, z, nodeloc, planetloc, planetparentloc, collider, task):
 
         # SAME AS HITBOXUPDATE BUT FOR A GLARE WHICH APPEARS WHEN FAR AWAY ( LIKE REAL LIFE )!
         
@@ -485,7 +485,11 @@ class Planetarium(ShowBase):
             planetloc.hide()
             tempnode.reparentTo(render)
             nodeloc.setPos(render, ((250*((x2)/distance)),(250*((y2)/distance)),(250*((z2)/distance))))
+            collider.setScale(self.root, 1)
+            collider.setPos(render, ((65*((x2)/distance)),(65*((y2)/distance)),(65*((z2)/distance))))
         else:
+            collider.setScale(self.root, planetloc.getScale(self.root)*1.5)
+            collider.setPos(planetloc, (0,0,0))
             if self.scenetype == "solar" and (bodytype == "planet" or bodytype == "dwarf_planet") : # We only want the body-as-center function to happen with planets, moons are overkill
                 print(objname)
                 self.localroot.setPos(0,0,0)

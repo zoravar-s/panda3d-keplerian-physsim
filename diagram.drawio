@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0" version="29.6.4">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0" version="29.6.6">
   <diagram name="Page-1" id="ib5QHis4_bbkiFnd4rFi">
-    <mxGraphModel dx="1559" dy="737" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1418" dy="780" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -13,7 +13,10 @@
         <mxCell id="O9Trp1BNhHn_VR8_TUYc-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" value="Game-Space" vertex="1">
           <mxGeometry height="40" width="120" x="300" y="220" as="geometry" />
         </mxCell>
-        <mxCell id="O9Trp1BNhHn_VR8_TUYc-22" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-4">
+        <mxCell id="MKwAFfqzU1_Lzyvje23P-3" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="MKwAFfqzU1_Lzyvje23P-4" edge="1" parent="1" source="O9Trp1BNhHn_VR8_TUYc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="O9Trp1BNhHn_VR8_TUYc-10">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="O9Trp1BNhHn_VR8_TUYc-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Planetary Game-Space" vertex="1">
@@ -156,6 +159,9 @@
         </mxCell>
         <mxCell id="O9Trp1BNhHn_VR8_TUYc-59" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="&lt;div&gt;- This may be fetched&lt;/div&gt;&lt;div&gt;from an external library&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="130" x="1210" y="432" as="geometry" />
+        </mxCell>
+        <mxCell id="MKwAFfqzU1_Lzyvje23P-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="john" vertex="1">
+          <mxGeometry height="60" width="30" x="1040" y="50" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

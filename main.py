@@ -16,7 +16,7 @@ import planetcsvhandler
 import planethandler
 
 confVars= """
-win-size 1280 720
+win-size 640 480
 window-title Planetarium
 show-frame-rate-meter False
 """
@@ -33,6 +33,7 @@ from direct.interval.IntervalGlobal import *
 from direct.gui.OnscreenText import *
 from direct.filter.CommonFilters import CommonFilters
 from direct.gui.OnscreenImage import *
+from direct.showbase.DirectObject import DirectObject
 
 def degToRad(degrees):
     return degrees * (pi / 180.0)
@@ -57,13 +58,23 @@ class Planetarium(ShowBase):
     def __init__(self): ### MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT MAIN INIT ###
                
         ShowBase.__init__(self)
+        
+        self.font = loader.loadFont("fonts/arial.ttf") # Font importing
+        self.lightfont = loader.loadFont("fonts/arial_light.ttf")
+        base.setBackgroundColor(0,0,0) # Bg colour
+        
+        loadingText = OnscreenText(text="Loading...", pos=(0,-0.205), scale=0.1, fg=(0.8,0.8,1,1), font=self.font, align=2, parent=base.a2dTopCenter)
+        
+        image = OnscreenImage(image='splash.png', parent=render2d)
+        
+        for i in range(4):
+            base.graphicsEngine.renderFrame() # Render loading screen
+        
         self.running = 0 # Running is true (Note to future self, this variable is governed by everything instead of everything being governed by this variable FOR SOME REASON)
         self.disableMouse() # Awful name but disables default camera
         lens = base.camLens
-        lens.setNearFar(0.02,5e5) # Clip planes (Shit doesn't work fix later if needed)
+        lens.setNearFar(0.005,1e4) # Clip planes (Shit doesn't work fix later if needed)
         render.clear_clip_plane()
-        base.setBackgroundColor(0,0,0) # Bg colour
-        self.font = loader.loadFont("fonts/arial.ttf")
         
         self.root = render.attachNewNode('root') # The entire game's root location
         self.localroot = render.attachNewNode('localroot') # This is the "root" of the focused object which is being linked to a place closer to the camera (floating point workaround)
@@ -71,7 +82,7 @@ class Planetarium(ShowBase):
         self.camera.setPos(0,0,0)
         self.camera.setHpr(90,0,0)
 
-        self.speed = 0.1
+        self.speed = 0.01
         
         self.scenetype = "solar"
         self.focusplanet = False # These are for initialising the scenetype variables. For planetary and solar-scale seamless nodes adjustment
@@ -84,17 +95,14 @@ class Planetarium(ShowBase):
         self.yvel = 0
         self.zvel = 0
 
-        self.scale = 1500
+        self.scale = 3000
         
         self.currenttime = 2454525.0
         
-        time.sleep(1)
-        
         self.createUI() # Create UI
-
         filters = CommonFilters(base.win, base.cam)
         filters.setBloom()
-
+            
         taskMgr.add(self.camUpdate, 'camUpdate')
         taskMgr.add(self.selectorUpdate, 'selectorUpdate')
 
@@ -108,11 +116,22 @@ class Planetarium(ShowBase):
         # name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel
         self.selectedObject = '' # SELECTED OBJECT VARIABLE       
         self.generatePlanets()
-        self.generateOrbits()
         
         self.root.setPos(-(self.root.find("planets").find("Earth").getPos(render))+LVecBase3f(0.2,0.2,0))
         camera.lookAt(self.root.find("planets").find("Earth"))
-        self.toggleOrbits()        
+        
+        self.generateOrbits() # Orbits
+        self.toggleOrbits()
+        
+        # Change to game screen size
+        loadingText.removeNode()
+        image.removeNode()
+        properties = WindowProperties()
+        properties.setSize(1280, 720) # Or 1920, 1080
+        properties.setOrigin(-2, -2)
+        # properties.setFullscreen(True) # Optional: toggle fullscreen
+        base.graphicsEngine.renderFrame()
+        base.win.requestProperties(properties)
         
     def createSun(self): # This creates the Sun, why is this special enough for it's own function? WHO KNOWS!
         sunNode = self.root.attachNewNode('Sun')
@@ -155,13 +174,14 @@ class Planetarium(ShowBase):
         taskMgr.doMethodLater(0.1, self.sunHitboxUpdate, ('hitboxUpdateSun'), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,planethandler.kmToUnits(1.3927e6, self.scale)], appendTask=True)
         taskMgr.add(self.sunGlare, ('glareUpdateSun'), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board], appendTask=True)        
         sunNode.setLightOff()
-        
+    
     def createPlanetNode(self):
         self.root.attachNewNode('planets')
         self.root.attachNewNode('orbits')
 
     # "name","body","parentobj","radius_km","a_AU","e","i_deg","Omega_deg","omega_deg","M0_deg","orbitalperiod_days","rotperiod_days","W0_deg","jd_epoch"
     def generateOrbits(self):
+        self.orbitcache = []
         planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library to get (in order:)
         for planet in planetData:
             self.drawOrbit(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
@@ -176,6 +196,7 @@ class Planetarium(ShowBase):
     def drawOrbit(self, name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel): # Some of the arguments aren't even used but we want consistency
 
         resolution = 50
+        temporary = []
         
         planets = self.root.find("planets")
         parentNode = planets.find(parentobj)
@@ -187,7 +208,7 @@ class Planetarium(ShowBase):
         lines.setThickness(1)
         lines.setColor( Vec4(0,0,0.5,1) )
         
-        julian = jd_epoch
+        julian = self.currenttime
         
         # jd,
         # jd_epoch,
@@ -199,23 +220,54 @@ class Planetarium(ShowBase):
         # M0,
         # period
         
+            
         location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
         planet_pos = LVecBase3f(location[0],location[1],location[2])
-        planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale) # 1000 units = 1 AU
+        planetNode.setPos(self.root, parentNode.getPos()+planet_pos*self.scale) # 1000 units = 1 AU
+        
+        distance = camera.getDistance(planetNode)
+        x2 = planetNode.getX(render)
+        y2 = planetNode.getY(render)
+        z2 = planetNode.getZ(render)
+        if distance > 1000:
+            planetNode.setPos(render, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
+            
         lines.moveTo(planetNode.getPos())
         
+        temporary.append(planetNode.getPos(),Vec4(0,0,0.5,1))
+            
         for m in range(resolution):
+            color = Vec4(0,0,0.2+(m/resolution)/2,1)
+            lines.setColor( color )
             lines.moveTo(planetNode.getPos())
-            julian = jd_epoch+(period/resolution)*m
+            julian = julian+(period/resolution)
             location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
             planet_pos = LVecBase3f(location[0],location[1],location[2])
-            planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale)
+            planetNode.setPos(self.root, parentNode.getPos()+planet_pos*self.scale)
+            
+            temporary.append(planetNode.getPos(),color)
+            
+            distance = camera.getDistance(planetNode)
+            x2 = planetNode.getX(render)
+            y2 = planetNode.getY(render)
+            z2 = planetNode.getZ(render)
+            if distance > 1000:
+                planetNode.setPos(render, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
             lines.drawTo(planetNode.getPos())
             
-        julian = jd_epoch   
+        julian = self.currenttime   
         location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
         planet_pos = LVecBase3f(location[0],location[1],location[2])
-        planetNode.setPos(render, parentNode.getPos()+planet_pos*self.scale)
+        planetNode.setPos(self.root, parentNode.getPos()+planet_pos*self.scale)
+
+        temporary.append(planetNode.getPos(),Vec4(0,0,0.2,1)) ################
+        
+        distance = camera.getDistance(planetNode)
+        x2 = planetNode.getX(render)
+        y2 = planetNode.getY(render)
+        z2 = planetNode.getZ(render)
+        if distance > 1000:
+            planetNode.setPos(render, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
         lines.drawTo(planetNode.getPos())
 
         planetNode.removeNode()
@@ -284,7 +336,6 @@ class Planetarium(ShowBase):
         board.reparentTo(planetNode)
         board.setLightOff()
         
-        
         # Atmosphere start
         if atm == 1:
             atmshader = Shader.load(Shader.SL_GLSL, vertex="atmosphere.vert.glsl", fragment="atmosphere.frag.glsl")
@@ -311,14 +362,12 @@ class Planetarium(ShowBase):
             ring_tex = loader.loadTexture("textures/saturn_rings.png")
             rings.setTexture(ring_tex, 0)
             rings.setTransparency(TransparencyAttrib.MAlpha)
-            rings.lookAt(self.sun)
             rings.setColor(0.7,0.7,0.7)
-            rings.setH((rings.getH()+270)-planet.getH())
-            rings.setP(90)
-            rings.setR(0)
             rings.setShaderOff()
             rings.setLightOff()
             rings.reparentTo(planet)
+            rings.lookAt(rings.getPos()+light_dir)
+            rings.setP(-90)
 
 
         # Data stored on planet
@@ -330,6 +379,19 @@ class Planetarium(ShowBase):
         #taskMgr.add(self.planetUpdate, ('Planetupdate'+str(name)), extraArgs=[name, planet, planetNode, parentNode, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch], appendTask=True)
         board.setScale((0.5/size)+(size)/150)
         planet.reparentTo(planetNode)
+
+        if body == "planet":
+            planetNode.setTag("one", "Planet")
+        elif body == "moon":
+            planetNode.setTag("one", "Moon of "+str(parentobj))
+        elif body == "dwarf_planet":
+            planetNode.setTag("one", "Dwarf Planet")
+
+        planetNode.setTag("two", "Diameter: "+str(radius*2)+" km")
+        planetNode.setTag("three", "Semi Major Axis: "+str(a)+" AU")
+        planetNode.setTag("four", "Orbital Period: "+str(period)+" days")
+        planetNode.setTag("five", "Rotational Period: "+str(rotperiod)+" days")
+        planetNode.setTag("six", "Inclination: "+str(i))
         
     def starGenerate(self):
         domeData = csvhandler.read_data("hygdata.csv", 6) # Uses custom library to get (in order:)
@@ -374,19 +436,28 @@ class Planetarium(ShowBase):
             collider = starNode.attachNewNode(starCol)
             collider.setPythonTag('owner', starNode)
             if star[1]:
-                starNode.setTag("hip", str(star[1]))
-            starNode.setTag("ra", str(star[2]))
-            starNode.setTag("dec", str(star[3]))
+                starNode.setTag("one", "HIP Number: "+str(star[1]))
+            starNode.setTag("two", "RA: "+str(star[2]))
+            starNode.setTag("three", "DEC: "+str(star[3]))
+            starNode.setTag("four", str(star[5])+" Type Star")
+            starNode.setTag("five", "Magnitude: "+str(star[4]))
+            #starNode.setTag("six", "DEC: "+str(star[3]))
             starNode.setLightOff()
             
     def createUI(self):
-        self.runningtext = OnscreenText(text="Running", pos=(1.6, 0.8), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
-        self.selectiontext = OnscreenText(text="", pos=(-1.6, 0.8), scale=0.07, fg=(1,1,1,1), font=self.font, align=0) # Selected obj
-        self.hiptext = OnscreenText(text="", pos=(-1.6, 0.75), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj hip number
-        self.rightasctext = OnscreenText(text="", pos=(-1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj right ascention
-        self.decltext = OnscreenText(text="", pos=(-1.6, 0.65), scale=0.05, fg=(1,1,1,1), font=self.font, align=0) # Selected obj declination
-        self.speedtext = OnscreenText(text=(str((1000*round((planethandler.unitsToKm(self.speed, self.scale))/1000,3)))+" km/s"), pos=(1.6, 0.7), scale=0.05, fg=(1,1,1,1), font=self.font, align=1) # Temp "pause" menu
-    
+        color = (0.8,0.8,1,1)
+        self.runningtext = OnscreenText(text="Running", pos=(-0.1, 0.1), scale=0.04, fg=color, font=self.lightfont, align=1, parent=base.a2dBottomRight) # Temp "pause" menu
+        self.selectiontext = OnscreenText(text="", pos=(0.1,-0.15), scale=0.07, fg=color, font=self.font, align=0, parent=base.a2dTopLeft) # Selected obj
+        self.desc1 = OnscreenText(text="", pos=(0.1,-0.205), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
+        self.desc2 = OnscreenText(text="", pos=(0.1,-0.255), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
+        self.desc3 = OnscreenText(text="", pos=(0.1,-0.305), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
+        self.desc4 = OnscreenText(text="", pos=(0.1,-0.355), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
+        self.desc5 = OnscreenText(text="", pos=(0.1,-0.405), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
+        self.desc6 = OnscreenText(text="", pos=(0.1,-0.455), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
+        self.speedtext = OnscreenText(text=("7500 km/s"), pos=(-0.1, -0.1), scale=0.05, fg=color, font=self.font, align=1, parent=base.a2dTopRight) # Temp "pause" menu
+        self.cameratext = OnscreenText(text="", pos=(0.1,0.1), scale=0.04, fg=color, font=self.lightfont, align=0, parent=base.a2dBottomLeft)
+        self.rendertype = OnscreenText(text="", pos=(0.1,0.15), scale=0.04, fg=color, font=self.lightfont, align=0, parent=base.a2dBottomLeft)
+        
     def selectorUpdate(self,task):
         if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
             pos = Point3()
@@ -475,6 +546,7 @@ class Planetarium(ShowBase):
             bodytype = planetparentloc.getTag("body")
         if distance > 250:
             if self.focusplanet == objname:
+                self.rendertype.text = ("Solar Render Sphere")
                 self.localroot.setPos(0,0,0)
                 planetparentloc.setScale(planetparentloc.getScale(self.root))
                 self.scenetype = "solar"
@@ -491,7 +563,7 @@ class Planetarium(ShowBase):
             collider.setScale(self.root, planetloc.getScale(self.root)*1.5)
             collider.setPos(planetloc, (0,0,0))
             if self.scenetype == "solar" and (bodytype == "planet" or bodytype == "dwarf_planet") : # We only want the body-as-center function to happen with planets, moons are overkill
-                print(objname)
+                self.rendertype.text = (str(objname)+" Render Sphere")
                 self.localroot.setPos(0,0,0)
                 planetparentloc.setScale(planetparentloc.getScale(self.localroot))
                 self.scenetype = "planetary"
@@ -526,9 +598,9 @@ class Planetarium(ShowBase):
     
     def camUpdate(self,task):
 
-
+        self.cameratext.text = ("Camera Render Rotation "+str(camera.getH(render))+" : "+str(camera.getP(render))+" : "+str(camera.getR(render)))
         playerMoveSpeed = self.speed
-        movesmoothness = 1.2 # Higher = less smooth
+        movesmoothness = 1.1 # Higher = less smooth
         
         x_movement = self.xvel
         y_movement = self.yvel
@@ -542,7 +614,7 @@ class Planetarium(ShowBase):
             self.runningtext.text = "Paused"
         # if self.running == 1:
         # if True
-        if True:
+        if self.running == 1:
             if self.keyMap['forward']:
                 x_movement -= dt * playerMoveSpeed * sin(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
                 y_movement += dt * playerMoveSpeed * cos(degToRad(camera.getH())) * cos(degToRad(camera.getP()));
@@ -656,7 +728,8 @@ class Planetarium(ShowBase):
         self.accept('d-up', self.updateKeyMap, ['right', False])
         self.accept('r', self.changespeed, extraArgs=[2])
         self.accept('f', self.changespeed, extraArgs=[0.5])
-        self.accept('o', self.toggleOrbits)        
+        self.accept('o', self.toggleOrbits)
+        self.accept('t', self.generateOrbits) 
 
     def toggleOrbits(self):
         node = self.root.find("orbits")
@@ -666,9 +739,9 @@ class Planetarium(ShowBase):
             node.hide()
             
     def changespeed(self, val):
-        if planethandler.unitsToKm(self.speed*val, self.scale) > 500:
+        if (planethandler.unitsToKm((self.speed)*globalClock.getDt()*globalClock.getAverageFrameRate()*10, self.scale))*val > 1000:
             self.speed = (self.speed)*val
-            self.speedtext.setText(str((1000*round((planethandler.unitsToKm(self.speed, self.scale))/1000,3)))+" km/s")
+            self.speedtext.setText((str(round(planethandler.unitsToKm((self.speed)*globalClock.getDt()*globalClock.getAverageFrameRate()*10, self.scale)/100)*100))+" km/s")
         
     def updateKeyMap(self, key, value):
         self.keyMap[key] = value
@@ -692,20 +765,35 @@ class Planetarium(ShowBase):
                 else:
                     self.selectiontext.text = "" # IDK when an object would be nameless, but...
                     
-                if self.selectedObject.hasTag("hip"):
-                    self.hiptext.text = ("HIP Number: "+str(self.selectedObject.getTag("hip")))
+                if self.selectedObject.hasTag("one"):
+                    self.desc1.text = (str(self.selectedObject.getTag("one")))
                 else:
-                    self.hiptext.text = ""
+                    self.desc1.text = ""
                     
-                if self.selectedObject.hasTag("ra"):
-                    self.rightasctext.text = ("RA: "+str(self.selectedObject.getTag("ra")))
+                if self.selectedObject.hasTag("two"):
+                    self.desc2.text = (str(self.selectedObject.getTag("two")))
                 else:
-                    self.rightasctext.text = ""
+                    self.desc2.text = ""
                     
-                if self.selectedObject.hasTag("dec"):
-                    self.decltext.text = ("DEC: "+str(self.selectedObject.getTag("dec")))
+                if self.selectedObject.hasTag("three"):
+                    self.desc3.text = (str(self.selectedObject.getTag("three")))
                 else:
-                    self.decltext.text = ""
+                    self.desc3.text = ""
+
+                if self.selectedObject.hasTag("four"):
+                    self.desc4.text = (str(self.selectedObject.getTag("four")))
+                else:
+                    self.desc4.text = ""
+
+                if self.selectedObject.hasTag("five"):
+                    self.desc5.text = (str(self.selectedObject.getTag("five")))
+                else:
+                    self.desc5.text = ""
+
+                if self.selectedObject.hasTag("six"):
+                    self.desc6.text = (str(self.selectedObject.getTag("six")))
+                else:
+                    self.desc6.text = ""
             
         pass
         

@@ -160,9 +160,6 @@
         <mxCell id="O9Trp1BNhHn_VR8_TUYc-59" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;rounded=1;" value="&lt;div&gt;- This may be fetched&lt;/div&gt;&lt;div&gt;from an external library&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="130" x="1210" y="432" as="geometry" />
         </mxCell>
-        <mxCell id="MKwAFfqzU1_Lzyvje23P-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="john" vertex="1">
-          <mxGeometry height="60" width="30" x="1040" y="50" as="geometry" />
-        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>

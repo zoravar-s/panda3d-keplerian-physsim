@@ -63,6 +63,10 @@ class Planetarium(ShowBase):
         self.lightfont = loader.loadFont("fonts/arial_light.ttf")
         base.setBackgroundColor(0,0,0) # Bg colour
         
+        self.select = loader.loadSfx("sounds/select.wav")
+        self.display = loader.loadSfx("sounds/display.mp3")
+        self.display.setVolume(0.3)
+        
         loadingText = OnscreenText(text="Loading...", pos=(0,-0.205), scale=0.1, fg=(0.8,0.8,1,1), font=self.font, align=2, parent=base.a2dTopCenter)
         
         image = OnscreenImage(image='splash.png', parent=render2d)
@@ -98,11 +102,14 @@ class Planetarium(ShowBase):
         self.scale = 3000
         
         self.currenttime = 2454525.0
+
+        self.orbits = True
         
         self.createUI() # Create UI
         filters = CommonFilters(base.win, base.cam)
         filters.setBloom()
-            
+
+        self.selectedObject = False
         taskMgr.add(self.camUpdate, 'camUpdate')
         taskMgr.add(self.selectorUpdate, 'selectorUpdate')
 
@@ -117,7 +124,7 @@ class Planetarium(ShowBase):
         self.selectedObject = '' # SELECTED OBJECT VARIABLE       
         self.generatePlanets()
         
-        self.root.setPos(-(self.root.find("planets").find("Earth").getPos(render))+LVecBase3f(0.2,0.2,0))
+        self.root.setPos(-(self.root.find("planets").find("Earth").getPos(render))+LVecBase3f(0.5,0.5,0))
         camera.lookAt(self.root.find("planets").find("Earth"))
         
         self.generateOrbits() # Orbits
@@ -129,9 +136,20 @@ class Planetarium(ShowBase):
         properties = WindowProperties()
         properties.setSize(1280, 720) # Or 1920, 1080
         properties.setOrigin(-2, -2)
+        properties.set_icon_filename("icon.ico")
         # properties.setFullscreen(True) # Optional: toggle fullscreen
         base.graphicsEngine.renderFrame()
         base.win.requestProperties(properties)
+
+        ### MUSIC! ###
+
+        music = loader.loadSfx("sounds/music/i.mp3")
+        music.set_loop(True)
+        music.play()
+        
+        ###
+        
+        taskMgr.add(self.orbitUpdate, ('orbitUpdate'))
         
     def createSun(self): # This creates the Sun, why is this special enough for it's own function? WHO KNOWS!
         sunNode = self.root.attachNewNode('Sun')
@@ -174,28 +192,80 @@ class Planetarium(ShowBase):
         taskMgr.doMethodLater(0.1, self.sunHitboxUpdate, ('hitboxUpdateSun'), extraArgs=[collider.getX(self.root),collider.getY(self.root),collider.getZ(self.root),collider,planethandler.kmToUnits(1.3927e6, self.scale)], appendTask=True)
         taskMgr.add(self.sunGlare, ('glareUpdateSun'), extraArgs=[board.getX(self.root),board.getY(self.root),board.getZ(self.root),board], appendTask=True)        
         sunNode.setLightOff()
-    
+        
     def createPlanetNode(self):
         self.root.attachNewNode('planets')
-        self.root.attachNewNode('orbits')
+        orbits = render.attachNewNode('orbits')
+        orbits.set_bin("fixed", 0);
+        orbits.set_depth_test(False);
+        orbits.set_depth_write(False)
 
     # "name","body","parentobj","radius_km","a_AU","e","i_deg","Omega_deg","omega_deg","M0_deg","orbitalperiod_days","rotperiod_days","W0_deg","jd_epoch"
     def generateOrbits(self):
         self.orbitcache = []
         planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library to get (in order:)
         for planet in planetData:
-            self.drawOrbit(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
+            self.writeOrbit(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
                            float(planet[7]),float(planet[8]),float(planet[9]),float(planet[10]),float(planet[11]),float(planet[12]),float(planet[13]),int(planet[14]),float(planet[15]))
+
                            
     def generatePlanets(self):
         planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library to get (in order:)
         for planet in planetData:
             self.createPlanet(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
                            float(planet[7]),float(planet[8]),float(planet[9]),float(planet[10]),float(planet[11]),float(planet[12]),float(planet[13]),int(planet[14]),float(planet[15]))
-                   
-    def drawOrbit(self, name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel): # Some of the arguments aren't even used but we want consistency
+    def drawOrbit(self):
+        
+        planets = self.root.find("planets")
+        tempNode = planets.attachNewNode("tempnode")
+        
+        camerapos = camera.getPos(self.root)
+        
+        lines = LineSegs()
+        lines.setThickness(1)
+        lines.setColor( Vec4(0,0,0.5,1) )
+        
+        for i in self.orbitcache:
+            tempNode.setPos(self.root, LPoint3f(i[0][0])+self.root.getPos())
+            
+            distance = tempNode.getDistance(render)
+            x2 = tempNode.getX(self.root)
+            y2 = tempNode.getY(self.root)
+            z2 = tempNode.getZ(self.root)
+            if distance > 1000:
+                tempNode.setPos(self.root, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
+                
+            lines.moveTo(tempNode.getPos())
+            
+            for j in i:
+                tempNode.setPos(self.root, LPoint3f(j[0])+self.root.getPos())
+                lines.setColor(j[1])
+                
+                distance = camera.getDistance(tempNode)
+                x2 = tempNode.getX(self.root)
+                y2 = tempNode.getY(self.root)
+                z2 = tempNode.getZ(self.root)
+                if distance > 1000:
+                    tempNode.setPos(self.root, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
+                    
+                lines.drawTo(tempNode.getPos())
 
-        resolution = 50
+        tempNode.removeNode()
+        node = lines.create()
+        np = NodePath(node)
+        np.reparentTo(render.find("orbits"))
+        np.setLightOff()
+        
+    def orbitUpdate(self, task):
+        render.find('orbits').removeNode()
+        render.attachNewNode('orbits')
+        if self.orbits == True:
+            self.drawOrbit()
+        return task.again
+    
+    def writeOrbit(self, name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel): # Some of the arguments aren't even used but we want consistency
+
+        resolution = 25
         temporary = []
         
         planets = self.root.find("planets")
@@ -203,10 +273,6 @@ class Planetarium(ShowBase):
         planetNode = planets.attachNewNode(str(name))
         if parentobj == "Sun":
             parentNode = self.sun            
-        
-        lines = LineSegs()
-        lines.setThickness(1)
-        lines.setColor( Vec4(0,0,0.5,1) )
         
         julian = self.currenttime
         
@@ -229,38 +295,35 @@ class Planetarium(ShowBase):
         x2 = planetNode.getX(render)
         y2 = planetNode.getY(render)
         z2 = planetNode.getZ(render)
+
+        temporary.append([planetNode.getPos(),Vec4(0,0,0.5,1)])
+        
         if distance > 1000:
             planetNode.setPos(render, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
             
-        lines.moveTo(planetNode.getPos())
-        
-        temporary.append(planetNode.getPos(),Vec4(0,0,0.5,1))
-            
         for m in range(resolution):
             color = Vec4(0,0,0.2+(m/resolution)/2,1)
-            lines.setColor( color )
-            lines.moveTo(planetNode.getPos())
             julian = julian+(period/resolution)
             location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
             planet_pos = LVecBase3f(location[0],location[1],location[2])
             planetNode.setPos(self.root, parentNode.getPos()+planet_pos*self.scale)
             
-            temporary.append(planetNode.getPos(),color)
+            temporary.append([planetNode.getPos(self.root),color])
             
             distance = camera.getDistance(planetNode)
             x2 = planetNode.getX(render)
             y2 = planetNode.getY(render)
             z2 = planetNode.getZ(render)
+            
             if distance > 1000:
                 planetNode.setPos(render, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
-            lines.drawTo(planetNode.getPos())
             
         julian = self.currenttime   
         location = planethandler.orbitalCalc(julian, jd_epoch, a, e, i, Omega, omega, M0, period)
         planet_pos = LVecBase3f(location[0],location[1],location[2])
         planetNode.setPos(self.root, parentNode.getPos()+planet_pos*self.scale)
 
-        temporary.append(planetNode.getPos(),Vec4(0,0,0.2,1)) ################
+        temporary.append([planetNode.getPos(),Vec4(0,0,0.2,1)])
         
         distance = camera.getDistance(planetNode)
         x2 = planetNode.getX(render)
@@ -268,13 +331,10 @@ class Planetarium(ShowBase):
         z2 = planetNode.getZ(render)
         if distance > 1000:
             planetNode.setPos(render, ((1000*((x2)/distance)),(1000*((y2)/distance)),(1000*((z2)/distance))))
-        lines.drawTo(planetNode.getPos())
 
         planetNode.removeNode()
-        node = lines.create()
-        np = NodePath(node)
-        np.reparentTo(self.root.find("orbits"))
-        np.setLightOff()
+
+        self.orbitcache.append(temporary)
   
     def createPlanet(self, name, body, parentobj, radius, a, e, i, Omega, omega, M0, period, rotperiod, W0, jd_epoch, atm, atmlevel): # This creates a planet given the following:
 
@@ -338,11 +398,20 @@ class Planetarium(ShowBase):
         
         # Atmosphere start
         if atm == 1:
-            atmshader = Shader.load(Shader.SL_GLSL, vertex="atmosphere.vert.glsl", fragment="atmosphere.frag.glsl")
-            planet.setShaderInput("planetTex", tex)
-            planet.setShaderInput("intensity", 1.2)
-            planet.setShaderInput("level", atmlevel)
-            planet.setShaderInput("atmosphereColor", LVecBase3f(0.5, 0.7, 1.0))
+            if name == "Earth":
+                atmshader = Shader.load(Shader.SL_GLSL, vertex="atmosphere.vert.glsl", fragment="atmosphereEmission.frag.glsl")
+                planet.setShaderInput("planetTex", tex)
+                texEmission = loader.loadTexture("planets/emission/"+(name.lower())+".png")
+                planet.setShaderInput("emissionTex", texEmission)
+                planet.setShaderInput("intensity", 1.2)
+                planet.setShaderInput("level", atmlevel)
+                planet.setShaderInput("atmosphereColor", LVecBase3f(0.5, 0.7, 1.0))
+            else:
+                atmshader = Shader.load(Shader.SL_GLSL, vertex="atmosphere.vert.glsl", fragment="atmosphere.frag.glsl")
+                planet.setShaderInput("planetTex", tex)
+                planet.setShaderInput("intensity", 1.2)
+                planet.setShaderInput("level", atmlevel)
+                planet.setShaderInput("atmosphereColor", LVecBase3f(0.5, 0.7, 1.0))
 
         #
             light_dir = planet.getRelativeVector(render, LVecBase3f((self.sun.getPos(render) - planetNode.getPos(render)).normalized())) # It took an embarassing amount of time for this code to be realised
@@ -732,11 +801,11 @@ class Planetarium(ShowBase):
         self.accept('t', self.generateOrbits) 
 
     def toggleOrbits(self):
-        node = self.root.find("orbits")
-        if node.isHidden() == True:
-            node.show()
+        self.display.play()
+        if self.orbits == True:
+            self.orbits = False
         else:
-            node.hide()
+            self.orbits = True
             
     def changespeed(self, val):
         if (planethandler.unitsToKm((self.speed)*globalClock.getDt()*globalClock.getAverageFrameRate()*10, self.scale))*val > 1000:
@@ -758,7 +827,9 @@ class Planetarium(ShowBase):
 
             hitNodePath = rayHit.getIntoNodePath() # wtf are these methods?
             hitObject = hitNodePath.getPythonTag('owner')
-            self.selectedObject = hitObject
+            if not self.selectedObject == hitObject:
+                self.select.play()
+                self.selectedObject = hitObject
             if self.selectedObject is not None:
                 if hasattr(self.selectedObject, 'name'): # Just make sure that there's an object selected otherwise CRASH
                     self.selectiontext.text = str(self.selectedObject.name)

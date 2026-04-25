@@ -1,6 +1,6 @@
 # Planetarium
 
-Panda3D Planetarium program. This uses the HYG Database for stars and will have an adaptive gamespace in both Planetary and Stellar sizes. Runs a bit bad.
+Panda3D Planetarium program. This uses the HYG Database for stars and will have an adaptive gamespace in both Planetary and Stellar sizes.
 
 ### How to install: <br>
 Install Panda3D. Unzip data and have both CSV files in the main directory. Run main.py

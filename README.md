@@ -7,12 +7,12 @@ Install Panda3D. Unzip data and have both CSV files in the main directory. Run m
 
 ### Current controls: <br>
 WASD - Movement <br>
-R - Double camera speed <br>
-F - Halve camera speed <br>
+R - Increase camera speed <br>
+F - Decrease camera speed <br>
 O - Toggle orbits <br>
 Esc/Left Click - Pause/Resume <br>
 Left Click - Select object <br>
 
-Currently the bodies use pre-packaged data for calculations. This is very inaccurate and will be changed later to accurate real-time data from NASA API
+Currently the bodies use pre-packaged data for calculations. This may be inaccurate for later dates, as error in the rounded values increases.
 
 <sub>Zoravar Singh. 2026</sub>

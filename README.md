@@ -1,3 +1,5 @@
+This project was created for my A-Level Computer Science NEA. Putting this here for any future students to use as reference as this got 100% in the final grade. This program is very rudimentary but more than enough to satisfy the requirements.
+
 # Planetarium
 
 Panda3D Planetarium program. This uses the HYG Database for stars and will have an adaptive gamespace in both Planetary and Stellar sizes.

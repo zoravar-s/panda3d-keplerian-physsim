@@ -2,6 +2,8 @@ This project was created for my A-Level Computer Science NEA. Putting this here 
 
 # Planetarium
 
+![Saturn](https://raw.githubusercontent.com/zoravar-s/panda3d-keplerian-physsim/refs/heads/main/screenshots/6.png?token=GHSAT0AAAAAAEKGZWCZ5UWIVJRG54OUFI222VW5CPA)
+
 Panda3D Planetarium program. This uses the HYG Database for stars and a custom database for local Solar System objects. This program launches at the J2000 epoch (though rotational characteristics are heavily simplified in the final program. Tidally locked planets may be rotated wrong.)
 Uses Keplerian calculations to solve for each object's orbit and it's current location. Basic shaders with GLSL.
 

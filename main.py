@@ -1,8 +1,3 @@
-
-###
-# The following code you are about to bear witness to is so unreadable, that when I wrote it, only God and I could understand what it meant.
-# Now, only God can.
-###
 import math
 from math import *
 from panda3d.core import *
@@ -77,7 +72,7 @@ class Planetarium(ShowBase):
         self.running = 0 # Running is true (Note to future self, this variable is governed by everything instead of everything being governed by this variable FOR SOME REASON)
         self.disableMouse() # Awful name but disables default camera
         lens = base.camLens
-        lens.setNearFar(0.005,1e4) # Clip planes (Shit doesn't work fix later if needed)
+        lens.setNearFar(0.005,1e4) # Clip planes
         render.clear_clip_plane()
         
         self.root = render.attachNewNode('root') # The entire game's root location
@@ -203,14 +198,14 @@ class Planetarium(ShowBase):
     # "name","body","parentobj","radius_km","a_AU","e","i_deg","Omega_deg","omega_deg","M0_deg","orbitalperiod_days","rotperiod_days","W0_deg","jd_epoch"
     def generateOrbits(self):
         self.orbitcache = []
-        planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library to get (in order:)
+        planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library
         for planet in planetData:
             self.writeOrbit(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
                            float(planet[7]),float(planet[8]),float(planet[9]),float(planet[10]),float(planet[11]),float(planet[12]),float(planet[13]),int(planet[14]),float(planet[15]))
 
                            
     def generatePlanets(self):
-        planetData = planetcsvhandler.read_data("planetdata.csv") # Uses custom library to get (in order:)
+        planetData = planetcsvhandler.read_data("planetdata.csv")
         for planet in planetData:
             self.createPlanet(planet[0],planet[1],planet[2],float(planet[3]),float(planet[4]),float(planet[5]),float(planet[6]),
                            float(planet[7]),float(planet[8]),float(planet[9]),float(planet[10]),float(planet[11]),float(planet[12]),float(planet[13]),int(planet[14]),float(planet[15]))
@@ -523,7 +518,7 @@ class Planetarium(ShowBase):
         self.desc4 = OnscreenText(text="", pos=(0.1,-0.355), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
         self.desc5 = OnscreenText(text="", pos=(0.1,-0.405), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
         self.desc6 = OnscreenText(text="", pos=(0.1,-0.455), scale=0.05, fg=color, font=self.lightfont, align=0, parent=base.a2dTopLeft)
-        self.speedtext = OnscreenText(text=("7500 km/s"), pos=(-0.1, -0.1), scale=0.05, fg=color, font=self.font, align=1, parent=base.a2dTopRight) # Temp "pause" menu
+        self.speedtext = OnscreenText(text=("7500 km/s"), pos=(-0.1, -0.1), scale=0.05, fg=color, font=self.font, align=1, parent=base.a2dTopRight)
         self.cameratext = OnscreenText(text="", pos=(0.1,0.1), scale=0.04, fg=color, font=self.lightfont, align=0, parent=base.a2dBottomLeft)
         self.rendertype = OnscreenText(text="", pos=(0.1,0.15), scale=0.04, fg=color, font=self.lightfont, align=0, parent=base.a2dBottomLeft)
         
@@ -547,7 +542,6 @@ class Planetarium(ShowBase):
 
     def sunHitboxUpdate(self, x, y, z, nodeloc, size, task):
         
-        # "WTF does this do?"
         # Essentially, if a hitbox (or really any object) is supposed to be too far away from the camera,
         # Like, far away where it's basically a background,
         # Instead of having it stupid-far, it is actually only a few units away from the camera,
@@ -821,11 +815,11 @@ class Planetarium(ShowBase):
         self.selectObj()
         
     def selectObj(self):
-        if self.rayQueue.getNumEntries() > 0: # Just some crap to identify the hit object
+        if self.rayQueue.getNumEntries() > 0: # identify the hit object
             self.rayQueue.sortEntries()
             rayHit = self.rayQueue.getEntry(0)
 
-            hitNodePath = rayHit.getIntoNodePath() # wtf are these methods?
+            hitNodePath = rayHit.getIntoNodePath() # what are these methods?
             hitObject = hitNodePath.getPythonTag('owner')
             if not self.selectedObject == hitObject:
                 self.select.play()

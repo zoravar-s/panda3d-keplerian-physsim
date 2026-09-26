@@ -17,20 +17,16 @@ void main() {
     vec3 baseColor = texture(planetTex, uv).rgb;
     vec3 emission = texture(emissionTex, uv).rgb;
 
-    // Diffuse (Lambert) in view space
+    // Diffuse
     float lighting = max(dot(normal_view, lightDir_view), 0.0);
 
-
-    // Modulate planet color by lighting
     vec3 litPlanet = baseColor * lighting;
 
-    // Atmosphere edge glow (based on view angle)
+    // atm edge glow
     float edgeFactor = level*1.5 - max(dot(normal_view, viewDir_view), 0.0);
     float glow = pow(edgeFactor, 2.0) * intensity*0.2;
     float nightFactor = (1.0 - lighting)*0.8;
 
-    // Let the glow be somewhat affected by lighting so it feels consistent;
-    // if you want the glow independent of light, remove "* lighting".
     vec3 color = litPlanet + glow * atmosphereColor * lighting + emission * nightFactor;
 
     fragColor = vec4(color, 1.0);

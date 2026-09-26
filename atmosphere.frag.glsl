@@ -15,19 +15,18 @@ uniform float level = 1.5;
 void main() {
     vec3 baseColor = texture(planetTex, uv).rgb;
 
-    // Diffuse (Lambert) in view space
+    // diffuse
     float lighting = max(dot(normal_view, lightDir_view), 0.0);
 
 
-    // Modulate planet color by lighting
+    // Multiply by lighting
     vec3 litPlanet = baseColor * lighting;
 
     // Atmosphere edge glow (based on view angle)
     float edgeFactor = level - max(dot(normal_view, viewDir_view), 0.0);
     float glow = pow(edgeFactor, 2.0) * intensity;
 
-    // Let the glow be somewhat affected by lighting so it feels consistent;
-    // if you want the glow independent of light, remove "* lighting".
+    // Mix glow with lighting
     vec3 color = litPlanet + glow * atmosphereColor * lighting;
 
     fragColor = vec4(color, 1.0);
